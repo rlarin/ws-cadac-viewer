@@ -8,7 +8,7 @@ describe('NgxCadacViewerComponent', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [NgxCadacViewerComponent]
+      declarations: [NgxCadacViewerComponent],
     });
     fixture = TestBed.createComponent(NgxCadacViewerComponent);
     component = fixture.componentInstance;

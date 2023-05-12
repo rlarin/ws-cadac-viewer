@@ -1,6 +1,9 @@
 {
   "name": "ngx-cadac-viewer",
   "version": "0.0.0",
+  "scripts": {
+    "format": "prettier --write \"**/src/**/*.{js,ts,json,css,scss,html}\""
+  },
   "exports": {
     ".": {
       "sass": "./index.scss"
@@ -8,7 +11,10 @@
   },
   "peerDependencies": {
     "@angular/common": "^16.0.0",
-    "@angular/core": "^16.0.0"
+    "@angular/core": "^16.0.0",
+    "three": "^0.152.2",
+    "troika-three-text": "^0.47.1",
+    "three-csg-ts": "^3.1.13"
   },
   "dependencies": {
     "tslib": "^2.3.0"
