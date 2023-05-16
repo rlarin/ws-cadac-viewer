@@ -31,10 +31,10 @@ The _CadacThreeViewer_ provides the following features:
 
 ### 1. Include the Library in your project.
 
-The _CadacThreeViewer_ is available as a [npm package](https://www.npmjs.com/package/ngx-cadac-three-viewer).
+The _CadacThreeViewer_ is available as a [npm package](https://www.npmjs.com/package/ngx-cadac-viewer).
 
 ```bash
-npm install ngx-cadac-three-viewer
+npm i ngx-cadac-viewer
 ```
 
 Include the lib dependencies in your project.
@@ -54,10 +54,10 @@ npm i --save-dev @types/three
 Import the _CadacThreeViewer_ module in your Angular application.
 
   ```typescript
-  import { CadacThreeViewerModule } from 'ngx-cadac-three-viewer';
+  import { NgxCadacViewerModule } from 'ngx-cadac-viewer';
 
 @NgModule({
-  imports: [CadacThreeViewerModule]
+  imports: [NgxCadacViewerModule]
 })
 export class AppModule {
 }
@@ -68,7 +68,7 @@ export class AppModule {
 - Initialize a new instance of the **CadacThree** class, which will handle the setup and rendering of your 3D scene.
 
 ```typescript
-import { CadacThree, CadacUnits } from "ngx-cadac-three-viewer";
+import { CadacThree, CadacUnits } from "ngx-cadac-viewer";
 
 export class AppComponent implements AfterViewInit, OnDestroy {
   public cadacThreeHandler: CadacThree = new CadacThree({
@@ -97,7 +97,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
 ```html
 
-<cadac-three-viewer [cadacThreeHandler]="cadacThreeHandler" />
+<ngx-cadac-viewer
+  (objectChangedEmitter)="objectChangedHandler($event)"
+  (selectedObjectEmitter)="selectedObjectHandler($event)"
+  [cadacThreeHandler]="cadacThreeHandler"
+  [id]="'poc'" />
 ```
 
 ### 4. Add 3D objects to the scene.
