@@ -8,6 +8,7 @@ export type HandlerType = {
     height: number;
     depth: number;
     position: Vector3;
+    color: string;
   };
 };
 
@@ -18,7 +19,7 @@ export const CsgHandler = ({ handler, parameters }: HandlerType) => {
     parameters.width,
     parameters.height,
     parameters.depth,
-    '#09ff00'
+    parameters.color
   );
   cube.position.set(
     parameters.position.x,

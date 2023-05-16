@@ -15,6 +15,8 @@ import { ToggleButtonModule } from 'primeng/togglebutton';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { ToastModule } from 'primeng/toast';
 import { ColorPickerModule } from 'primeng/colorpicker';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { InputNumberModule } from 'primeng/inputnumber';
 
 @NgModule({
   declarations: [AppComponent, CubePocComponent, HomeComponent],
@@ -31,6 +33,8 @@ import { ColorPickerModule } from 'primeng/colorpicker';
     SelectButtonModule,
     ToastModule,
     ColorPickerModule,
+    InputSwitchModule,
+    InputNumberModule,
   ],
   providers: [],
   bootstrap: [AppComponent],

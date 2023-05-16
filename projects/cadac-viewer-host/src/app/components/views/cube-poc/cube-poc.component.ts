@@ -23,12 +23,13 @@ export class CubePocComponent implements AfterViewInit {
     height: 10,
     depth: 10,
     position: new Vector3(10, 5, 5),
-    color: undefined,
+    color: '#09ff00',
+    opacity: 100,
   };
   public restrictedPlanes = {
-    YZ: true,
-    XZ: true,
-    XY: true,
+    YZ: false,
+    XZ: false,
+    XY: false,
   };
 
   public handler = new CadacThree({
@@ -106,6 +107,18 @@ export class CubePocComponent implements AfterViewInit {
   updateColorHandler() {
     if (this.handler.selectedObject) {
       this.handler.updateObjectColor(this.parameters.color);
+    } else {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Warn',
+        detail: 'Please select an object first.',
+      });
+    }
+  }
+
+  changeOpacityHandler() {
+    if (this.handler.selectedObject) {
+      this.handler.updateObjectOpacity(this.parameters.opacity / 100);
     } else {
       this.messageService.add({
         severity: 'warn',

@@ -100,6 +100,9 @@ export class CadacThree {
   private shapesToRotate: CadacThreeShapeRotation[] = [];
   private mainLight: DirectionalLight = new DirectionalLight(0xffffff, 1);
   private readonly UPDATE_CAMERA_TIMEOUT = 200;
+  private tempProperties: {
+    [key: string]: any;
+  } = {};
   // private clickObjectsListener: CadacClickObjectListenerData[] = [];
   private debouncedObjectChangedEmitter = debounce(
     this.handleObjectChangedEmitter.bind(this)
@@ -117,6 +120,12 @@ export class CadacThree {
 
   public get SceneShapes(): CadacThreeShape[] {
     return this.sceneShapes;
+  }
+
+  public updateObjectOpacity(opacity: number, object?: CadacThreeShape) {
+    const updatedObject = object || this.selectedObject;
+    updatedObject.material.opacity = opacity;
+    updatedObject.material.needsUpdate = true;
   }
 
   public updateObjectColor(color: string, object?: CadacThreeShape) {
@@ -739,12 +748,17 @@ export class CadacThree {
   private tcMouseDownListener() {
     this.orbitControls.enabled = false;
     ((this.selectedObject as Mesh).material as Material).transparent = true;
+    this.tempProperties['opacity'] = (
+      (this.selectedObject as Mesh).material as Material
+    ).opacity;
     ((this.selectedObject as Mesh).material as Material).opacity = 0.5;
   }
 
   private tcMouseUpListener() {
     this.orbitControls.enabled = true;
-    ((this.selectedObject as Mesh).material as Material).opacity = 1;
+    ((this.selectedObject as Mesh).material as Material).opacity =
+      this.tempProperties['opacity'];
+    delete this.tempProperties['opacity'];
   }
 
   private onDocumentKeydown(event: KeyboardEvent) {

@@ -87,24 +87,22 @@
         <div class="grid">
           <div class="col">
             <div class="field">
-              <label for="color">Color</label>
+              <label for="color">Color</label><br />
               <p-colorPicker
                 (ngModelChange)="updateColorHandler()"
                 [(ngModel)]="parameters.color"
                 [inline]="true"
                 id="color"></p-colorPicker>
-              <!--              <input-->
-              <!--                (change)="updateColorHandler()"-->
-              <!--                [(ngModel)]="parameters.color"-->
-              <!--                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"-->
-              <!--                id="color"-->
-              <!--                type="color" />-->
             </div>
           </div>
           <div class="col">
             <div class="field">
               <label for="opacity">Opacity</label>
               <input
+                (change)="changeOpacityHandler()"
+                [(ngModel)]="parameters.opacity"
+                [max]="100"
+                [min]="0"
                 class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
                 id="opacity"
                 type="number" />
@@ -117,38 +115,32 @@
         <div class="grid">
           <div class="col">
             <div class="field">
-              <label for="restrictedPlaneXY">Plane XY</label>
-              <p-selectButton
+              <label for="restrictedPlaneXY">Plane XY</label><br />
+              <p-inputSwitch
                 (ngModelChange)="changeRestrictedPlanes(CadacPlanes.XY)"
                 [(ngModel)]="restrictedPlanes.XY"
-                [options]="planesStateOptions['XY']"
                 id="restrictedPlaneXY"
-                optionLabel="label"
-                optionValue="value"></p-selectButton>
+                inputId="restrictedPlaneXY"></p-inputSwitch>
             </div>
           </div>
           <div class="col">
             <div class="field">
-              <label for="restrictedPlaneXZ">Plane XZ</label>
-              <p-selectButton
+              <label for="restrictedPlaneXZ">Plane XZ</label><br />
+              <p-inputSwitch
                 (ngModelChange)="changeRestrictedPlanes(CadacPlanes.XZ)"
                 [(ngModel)]="restrictedPlanes.XZ"
-                [options]="planesStateOptions['XZ']"
                 id="restrictedPlaneXZ"
-                optionLabel="label"
-                optionValue="value"></p-selectButton>
+                inputId="restrictedPlaneXZ"></p-inputSwitch>
             </div>
           </div>
           <div class="col">
             <div class="field">
-              <label for="restrictedPlaneYZ">Plane YZ</label>
-              <p-selectButton
+              <label for="restrictedPlaneYZ">Plane YZ</label><br />
+              <p-inputSwitch
                 (ngModelChange)="changeRestrictedPlanes(CadacPlanes.YZ)"
                 [(ngModel)]="restrictedPlanes.YZ"
-                [options]="planesStateOptions['YZ']"
                 id="restrictedPlaneYZ"
-                optionLabel="label"
-                optionValue="value"></p-selectButton>
+                inputId="restrictedPlaneYZ"></p-inputSwitch>
             </div>
           </div>
         </div>
