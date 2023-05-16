@@ -1,8 +1,9 @@
 import { ElementRef } from '@angular/core';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import {
-  CadacClickObjectListenerData,
   CadacCSGOperation,
+  CadacEventData,
+  CadacEventDataTypes,
   CadacMergeMesh,
   CadacThreeOptions,
   CadacThreeSceneOptions,
@@ -10,6 +11,7 @@ import {
   CadacThreeShapeRotation,
   CadacUnits,
   DEFAULTS_CADAC,
+  CadacPlanes,
 } from './types';
 import { UnitsHelper } from '../helpers/units-helper';
 import {
@@ -49,6 +51,10 @@ import {
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import * as Troika from 'troika-three-text';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
+import { DragControls } from 'three/examples/jsm/controls/DragControls';
+import { useCreateRestrictedPlane } from '../helpers/planes-helper';
+import { Subject } from 'rxjs';
+import { calculateContrastColor, debounce } from '../helpers/utility-functions';
 
 export class CadacThree {
   public selectedObject: Object3D | undefined = undefined;
@@ -57,11 +63,18 @@ export class CadacThree {
   public scene: Scene = new Scene();
   public camera: PerspectiveCamera = new PerspectiveCamera();
   public elRef: ElementRef = new ElementRef(null);
+  public sceneShapes: CadacThreeShape[] = [];
+  public eventSubject$: Subject<CadacEventData> = new Subject();
   public orbitControls: OrbitControls = new OrbitControls(
     this.camera,
     this.renderer.domElement
   );
   public transformControls: TransformControls = new TransformControls(
+    this.camera,
+    this.renderer.domElement
+  );
+  public dragControls = new DragControls(
+    this.sceneShapes,
     this.camera,
     this.renderer.domElement
   );
@@ -74,19 +87,32 @@ export class CadacThree {
     scene: this.scene,
     sceneBackground: '#363636',
     defaultUnits: DEFAULTS_CADAC.UNIT,
+    restrictToPositiveQuadrant: {
+      XY: false,
+      YZ: false,
+      XZ: false,
+    },
   };
+  private restrictedQuadrants: [] = [];
   private axesHelperSize = 15;
   private transformControlsCurrentMode: 'translate' | 'rotate' = 'translate';
   private shapesToRotate: CadacThreeShapeRotation[] = [];
-  private sceneShapes: CadacThreeShape[] = [];
   private mainLight: DirectionalLight = new DirectionalLight(0xffffff, 1);
   private readonly UPDATE_CAMERA_TIMEOUT = 200;
-  private clickObjectsListener: CadacClickObjectListenerData[] = [];
+  private debouncedObjectChangedEmitter = debounce(
+    this.handleObjectChangedEmitter.bind(this)
+  );
+
+  // private clickObjectsListener: CadacClickObjectListenerData[] = [];
 
   constructor(options?: CadacThreeOptions) {
     this.options = { ...this.options, ...options?.sceneOptions };
     DEFAULTS_CADAC.UNIT = this.options.defaultUnits || DEFAULTS_CADAC.UNIT;
     this.elRef = this.options.elRef || this.elRef;
+
+    this.createRestrictedPlane(CadacPlanes.XY);
+    this.createRestrictedPlane(CadacPlanes.YZ);
+    this.createRestrictedPlane(CadacPlanes.XZ);
   }
 
   public get SceneShapes(): CadacThreeShape[] {
@@ -144,6 +170,7 @@ export class CadacThree {
     );
     this.scene.fog = new Fog(this.scene.background, nearFog, farFog);
 
+    this.setRestrictedPlanes();
     this.registerEventListeners();
     this.animate();
   }
@@ -459,6 +486,10 @@ export class CadacThree {
           'mouseUp',
           this.tcMouseUpListener.bind(this)
         );
+        this.transformControls.addEventListener(
+          'objectChange',
+          this.tcObjectChangeListener.bind(this)
+        );
         this.scene.add(this.transformControls);
       } else {
         this.transformControls.removeEventListener(
@@ -503,14 +534,19 @@ export class CadacThree {
     y.position.x = (y.fontSize / 2) * -1;
     z.position.y = z.fontSize / 2;
 
+    y.rotateY(Math.PI / 4);
     z.rotateY(Math.PI / 2);
 
-    x.color = '#ffffff';
-    y.color = '#ffffff';
-    z.color = '#ffffff';
+    z.color =
+      y.color =
+      x.color =
+        calculateContrastColor(this.options.sceneBackground);
+
     this.scene.add(x);
     this.scene.add(y);
     this.scene.add(z);
+
+    this.updateRestrictedPlanes();
 
     this.scene.add(this.axesHelper);
   }
@@ -536,8 +572,13 @@ export class CadacThree {
     this.shapesToRotate.push({ shape, xSpeed, ySpeed, zSpeed });
   }
 
-  public setGridHelper(size = 20, divisions = 20) {
-    this.gridHelper = new GridHelper(size, divisions);
+  public setGridHelper(
+    size = 20,
+    divisions = 20,
+    color1 = '#e3b107',
+    color2 = '#e3b107'
+  ) {
+    this.gridHelper = new GridHelper(size, divisions, color1, color2);
     this.scene.add(this.gridHelper);
   }
 
@@ -547,12 +588,12 @@ export class CadacThree {
     shape.add(line);
   }
 
-  public setEventClickListener({
-    object,
-    callback,
-  }: CadacClickObjectListenerData) {
-    this.clickObjectsListener.push({ object, callback });
-  }
+  // public setEventClickListener({
+  //   object,
+  //   callback,
+  // }: CadacClickObjectListenerData) {
+  //   this.clickObjectsListener.push({ object, callback });
+  // }
 
   public loadModel(model: string, callback: (obj: Group) => void) {
     const loader = new OBJLoader();
@@ -568,6 +609,44 @@ export class CadacThree {
         console.log('An error happened', error);
       }
     );
+  }
+
+  public updateObjectPosition() {
+    if (this.selectedObject) {
+      const { x, y, z } = this.selectedObject.position;
+      const { depth, height, width } = (this.selectedObject as CadacThreeShape)
+        .geometry.parameters;
+
+      this.selectedObject.position.set(
+        this.options.restrictToPositiveQuadrant?.YZ
+          ? x - width / 2 > 0
+            ? x
+            : width / 2
+          : x,
+        this.options.restrictToPositiveQuadrant?.XZ
+          ? y - height / 2 > 0
+            ? y
+            : height / 2
+          : y,
+        this.options.restrictToPositiveQuadrant?.XY
+          ? z - depth / 2 > 0
+            ? z
+            : depth / 2
+          : z
+      );
+
+      this.debouncedObjectChangedEmitter();
+    }
+  }
+
+  public toggleRestrictedPlanes(planes: CadacPlanes[]) {
+    console.log(planes);
+    planes.forEach(
+      plane =>
+        (this.options.restrictToPositiveQuadrant[plane] =
+          !this.options.restrictToPositiveQuadrant[plane])
+    );
+    this.updateRestrictedPlanes();
   }
 
   private animate() {
@@ -609,6 +688,8 @@ export class CadacThree {
     this.camera.updateProjectionMatrix();
     this.axesHelper = new AxesHelper(cameraZ * 2);
     this.scene.add(this.transformControls);
+    this.transformControls.updateMatrix();
+    this.orbitControls.update();
   }
 
   private registerEventListeners() {
@@ -617,6 +698,10 @@ export class CadacThree {
       'click',
       this.onDocumentMouseClick.bind(this)
     );
+  }
+
+  private tcObjectChangeListener() {
+    this.updateObjectPosition();
   }
 
   private tcMouseDownListener() {
@@ -671,8 +756,83 @@ export class CadacThree {
       if (intersectedObject) {
         this.selectedObject = this.scene.getObjectById(intersectedObject.id);
         this.toggleTransformControls(this.selectedObject, true);
+        this.eventSubject$.next({
+          type: CadacEventDataTypes.OBJECT_SELECTED,
+          payload: {
+            object: this.selectedObject,
+          },
+        });
+
+        this.debouncedObjectChangedEmitter();
         break;
       }
     }
+  }
+
+  private createRestrictedPlane(
+    plane: CadacPlanes,
+    size = this.axesHelperSize,
+    color = '#ff0000',
+    opacity = 0.05
+  ) {
+    switch (plane) {
+      case 'XY':
+        this.restrictedQuadrants['XY'] = useCreateRestrictedPlane({
+          size,
+          color,
+          opacity,
+          position: new Vector3(15, 15, 0),
+        });
+        return this.restrictedQuadrants['XY'];
+      case 'XZ':
+        this.restrictedQuadrants['XZ'] = useCreateRestrictedPlane({
+          size,
+          color: '#ff0000',
+          opacity: 0.05,
+          position: new Vector3(15, 0, 15),
+        }).rotateX(Math.PI / 2);
+        return this.restrictedQuadrants['XZ'];
+      case 'YZ':
+        this.restrictedQuadrants['YZ'] = useCreateRestrictedPlane({
+          size,
+          color: '#ff0000',
+          opacity: 0.05,
+          position: new Vector3(0, 15, 15),
+        }).rotateY(Math.PI / 2);
+        return this.restrictedQuadrants['YZ'];
+    }
+  }
+
+  private setRestrictedPlanes(XY?, YZ?, XZ?) {
+    if (this.options.restrictToPositiveQuadrant?.XY) {
+      // this.scene.add(this.restrictedQuadrants['XY']);
+      this.scene.add(XY || this.createRestrictedPlane(CadacPlanes.XY));
+    }
+
+    if (this.options.restrictToPositiveQuadrant?.YZ) {
+      // this.scene.add(this.restrictedQuadrants['YZ']);
+      this.scene.add(YZ || this.createRestrictedPlane(CadacPlanes.YZ));
+    }
+
+    if (this.options.restrictToPositiveQuadrant?.XZ) {
+      // this.scene.add(this.restrictedQuadrants['XZ']);
+      this.scene.add(XZ || this.createRestrictedPlane(CadacPlanes.XZ));
+    }
+  }
+
+  private updateRestrictedPlanes() {
+    this.scene.remove(this.restrictedQuadrants['XY']);
+    this.scene.remove(this.restrictedQuadrants['YZ']);
+    this.scene.remove(this.restrictedQuadrants['XZ']);
+    this.setRestrictedPlanes();
+  }
+
+  private handleObjectChangedEmitter() {
+    this.eventSubject$.next({
+      type: CadacEventDataTypes.OBJECT_CHANGED,
+      payload: {
+        object: this.selectedObject,
+      },
+    });
   }
 }

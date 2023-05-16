@@ -1,27 +1,11 @@
-<p-menubar [model]="items"></p-menubar>
-<div class="my-2">
-  <div class="grid">
-    <div class="col">
-      <div class="card">
-        <h5>Vertical</h5>
-        <div class="field">
-          <label for="firstname1">Firstname</label>
-          <input
-            class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
-            id="firstname1"
-            type="text" />
-        </div>
-        <div class="field">
-          <label for="lastname1">Lastname</label>
-          <input
-            class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
-            id="lastname1"
-            type="text" />
-        </div>
-      </div>
-    </div>
-    <div class="col">
-      <ngx-cadac-viewer [cadacThreeHandler]="handler" [id]="'poc'" />
-    </div>
-  </div>
-</div>
+<p-menubar [model]="items">
+  <ng-template pTemplate="start">
+    <p-avatar
+      class="cursor-pointer"
+      icon="pi pi-home"
+      routerLink="/"
+      shape="circle"
+      styleClass="mr-2"></p-avatar>
+  </ng-template>
+</p-menubar>
+<router-outlet />

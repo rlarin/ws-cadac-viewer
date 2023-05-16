@@ -1,6 +1,7 @@
 import { ElementRef } from '@angular/core';
 import * as THREE from 'three';
-import { Event } from 'three';
+import { BoxGeometry, CylinderGeometry, Event, SphereGeometry } from 'three';
+import { Geometry } from 'three/examples/jsm/deprecated/Geometry';
 
 export type CadacThreeShapeRotation = {
   shape: CadacThreeShape;
@@ -33,6 +34,12 @@ export const DEFAULTS_CADAC = {
   CAMERA_LOOK_AT: new THREE.Vector3(0, 0, 0),
 };
 
+export enum CadacPlanes {
+  XY = 'XY',
+  YZ = 'YZ',
+  XZ = 'XZ',
+}
+
 export type CadacThreeOptions = {
   defaultUnits?: CadacUnits;
   elRef?: ElementRef;
@@ -46,6 +53,11 @@ export type CadacThreeSceneOptions = {
   renderer?: THREE.WebGLRenderer;
   sceneBackground: string;
   defaultUnits?: CadacUnits;
+  restrictToPositiveQuadrant?: {
+    XY: boolean;
+    YZ: boolean;
+    XZ: boolean;
+  };
 };
 
 export type CadacMergeMesh = {
@@ -53,9 +65,28 @@ export type CadacMergeMesh = {
   position: THREE.Vector3;
 };
 
+export type CadacObjectData = {
+  object: THREE.Object3D;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  scale?: THREE.Vector3;
+  geometry?: BoxGeometry | SphereGeometry | CylinderGeometry | Geometry;
+};
+
 export type CadacClickObjectListenerData = {
   object: THREE.Object3D;
   callback: (event: Event, object?: THREE.Object3D) => void;
 };
 
-export type CadacThreeShape = THREE.Mesh | THREE.Line | THREE.Points;
+export enum CadacEventDataTypes {
+  OBJECT_SELECTED = 'OBJECT_SELECTED',
+  OBJECT_CHANGED = 'OBJECT_CHANGED',
+  TOGGLE_RESTRICTED_PLANE = 'TOGGLE_RESTRICTED_PLANE',
+}
+
+export type CadacEventData = {
+  type: CadacEventDataTypes;
+  payload?: any;
+};
+
+export type CadacThreeShape = THREE.Mesh | THREE.Line | THREE.Points | any;

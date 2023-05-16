@@ -1,0 +1,7 @@
+::ng-deep {
+  .cad-container {
+    height: calc(100vh - 100px) !important;
+    width: 100%;
+    position: relative;
+  }
+}

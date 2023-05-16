@@ -1,21 +1,13 @@
 export const topMenuItems = [
   {
-    label: 'File',
-    icon: 'pi pi-fw pi-file',
+    label: 'Examples',
+    icon: 'pi pi-fw pi-inbox',
     items: [
       {
-        label: 'New',
-        icon: 'pi pi-fw pi-plus',
-        items: [
-          {
-            label: 'Bookmark',
-            icon: 'pi pi-fw pi-bookmark',
-          },
-          {
-            label: 'Video',
-            icon: 'pi pi-fw pi-video',
-          },
-        ],
+        label: 'Cube Example',
+        icon: 'pi pi-fw pi-box',
+        url: 'cube-poc',
+        target: '_parent',
       },
       {
         label: 'Delete',

@@ -1,0 +1,149 @@
+<div class="my-2">
+  <div class="grid">
+    <div class="col-3">
+      <div class="card">
+        <h5>Cube Properties</h5>
+        <div class="grid">
+          <div class="col">
+            <div class="field">
+              <label for="width">Width</label>
+              <input
+                [(ngModel)]="parameters.width"
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="width"
+                type="number" />
+            </div>
+          </div>
+          <div class="col">
+            <div class="field">
+              <label for="height">Height</label>
+              <input
+                [(ngModel)]="parameters.height"
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="height"
+                type="number" />
+            </div>
+          </div>
+          <div class="col">
+            <div class="field">
+              <label for="depth">Depth</label>
+              <input
+                [(ngModel)]="parameters.depth"
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="depth"
+                type="number" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="grid">
+          <div class="col">
+            <div class="field">
+              <label for="xPos">Center X</label>
+              <input
+                (change)="changeHandler()"
+                [(ngModel)]="parameters.position.x"
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="xPos"
+                type="number" />
+            </div>
+          </div>
+          <div class="col">
+            <div class="field">
+              <label for="yPos">Center Y</label>
+              <input
+                (change)="changeHandler()"
+                [(ngModel)]="parameters.position.y"
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="yPos"
+                type="number" />
+            </div>
+          </div>
+          <div class="col">
+            <div class="field">
+              <label for="zPos">Center Z</label>
+              <input
+                (change)="changeHandler()"
+                [(ngModel)]="parameters.position.z"
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="zPos"
+                type="number" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h5>Material Properties</h5>
+        <div class="grid">
+          <div class="col">
+            <div class="field">
+              <label for="color">Color</label>
+              <input
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="color"
+                type="color" />
+            </div>
+          </div>
+          <div class="col">
+            <div class="field">
+              <label for="opacity">Opacity</label>
+              <input
+                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
+                id="opacity"
+                type="number" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h5>Restricted Planes</h5>
+        <div class="grid">
+          <div class="col">
+            <div class="field">
+              <label for="restrictedPlaneXY">Plane XY</label>
+              <p-selectButton
+                (ngModelChange)="changeRestrictedPlanes(CadacPlanes.XY)"
+                [(ngModel)]="restrictedPlanes.XY"
+                [options]="planesStateOptions['XY']"
+                id="restrictedPlaneXY"
+                optionLabel="label"
+                optionValue="value"></p-selectButton>
+            </div>
+          </div>
+          <div class="col">
+            <div class="field">
+              <label for="restrictedPlaneXZ">Plane XZ</label>
+              <p-selectButton
+                (ngModelChange)="changeRestrictedPlanes(CadacPlanes.XZ)"
+                [(ngModel)]="restrictedPlanes.XZ"
+                [options]="planesStateOptions['XZ']"
+                id="restrictedPlaneXZ"
+                optionLabel="label"
+                optionValue="value"></p-selectButton>
+            </div>
+          </div>
+          <div class="col">
+            <div class="field">
+              <label for="restrictedPlaneYZ">Plane YZ</label>
+              <p-selectButton
+                (ngModelChange)="changeRestrictedPlanes(CadacPlanes.YZ)"
+                [(ngModel)]="restrictedPlanes.YZ"
+                [options]="planesStateOptions['YZ']"
+                id="restrictedPlaneYZ"
+                optionLabel="label"
+                optionValue="value"></p-selectButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-9">
+      <ngx-cadac-viewer
+        (objectChangedEmitter)="objectChangedHandler($event)"
+        (selectedObjectEmitter)="selectedObjectHandler($event)"
+        [cadacThreeHandler]="handler"
+        [id]="'poc'" />
+    </div>
+  </div>
+</div>
