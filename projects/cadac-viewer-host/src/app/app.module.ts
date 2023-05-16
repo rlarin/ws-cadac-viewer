@@ -13,6 +13,8 @@ import { AvatarModule } from 'primeng/avatar';
 import { FormsModule } from '@angular/forms';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { ToastModule } from 'primeng/toast';
+import { ColorPickerModule } from 'primeng/colorpicker';
 
 @NgModule({
   declarations: [AppComponent, CubePocComponent, HomeComponent],
@@ -27,6 +29,8 @@ import { SelectButtonModule } from 'primeng/selectbutton';
     FormsModule,
     ToggleButtonModule,
     SelectButtonModule,
+    ToastModule,
+    ColorPickerModule,
   ],
   providers: [],
   bootstrap: [AppComponent],

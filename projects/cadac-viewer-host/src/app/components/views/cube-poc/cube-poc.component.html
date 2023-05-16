@@ -8,7 +8,9 @@
             <div class="field">
               <label for="width">Width</label>
               <input
+                (change)="propertiesHandler()"
                 [(ngModel)]="parameters.width"
+                [disabled]="!selectedObjectData"
                 class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
                 id="width"
                 type="number" />
@@ -18,7 +20,9 @@
             <div class="field">
               <label for="height">Height</label>
               <input
+                (change)="propertiesHandler()"
                 [(ngModel)]="parameters.height"
+                [disabled]="!selectedObjectData"
                 class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
                 id="height"
                 type="number" />
@@ -28,7 +32,9 @@
             <div class="field">
               <label for="depth">Depth</label>
               <input
+                (change)="propertiesHandler()"
                 [(ngModel)]="parameters.depth"
+                [disabled]="!selectedObjectData"
                 class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
                 id="depth"
                 type="number" />
@@ -44,6 +50,7 @@
               <input
                 (change)="changeHandler()"
                 [(ngModel)]="parameters.position.x"
+                [disabled]="!selectedObjectData"
                 class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
                 id="xPos"
                 type="number" />
@@ -55,6 +62,7 @@
               <input
                 (change)="changeHandler()"
                 [(ngModel)]="parameters.position.y"
+                [disabled]="!selectedObjectData"
                 class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
                 id="yPos"
                 type="number" />
@@ -66,6 +74,7 @@
               <input
                 (change)="changeHandler()"
                 [(ngModel)]="parameters.position.z"
+                [disabled]="!selectedObjectData"
                 class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
                 id="zPos"
                 type="number" />
@@ -79,10 +88,17 @@
           <div class="col">
             <div class="field">
               <label for="color">Color</label>
-              <input
-                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"
-                id="color"
-                type="color" />
+              <p-colorPicker
+                (ngModelChange)="updateColorHandler()"
+                [(ngModel)]="parameters.color"
+                [inline]="true"
+                id="color"></p-colorPicker>
+              <!--              <input-->
+              <!--                (change)="updateColorHandler()"-->
+              <!--                [(ngModel)]="parameters.color"-->
+              <!--                class="text-base text-color surface-overlay p-2 border-1 border-solid surface-border border-round appearance-none outline-none focus:border-primary w-full"-->
+              <!--                id="color"-->
+              <!--                type="color" />-->
             </div>
           </div>
           <div class="col">
@@ -147,3 +163,4 @@
     </div>
   </div>
 </div>
+<p-toast></p-toast>

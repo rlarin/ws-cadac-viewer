@@ -17,6 +17,7 @@ import { UnitsHelper } from '../helpers/units-helper';
 import {
   AmbientLight,
   AxesHelper,
+  BufferGeometry,
   Color,
   DirectionalLight,
   EdgesGeometry,
@@ -57,7 +58,7 @@ import { Subject } from 'rxjs';
 import { calculateContrastColor, debounce } from '../helpers/utility-functions';
 
 export class CadacThree {
-  public selectedObject: Object3D | undefined = undefined;
+  public selectedObject: CadacThreeShape | undefined = undefined;
   public renderer: WebGLRenderer = new WebGLRenderer({ antialias: true });
   public raycaster: Raycaster = new Raycaster();
   public scene: Scene = new Scene();
@@ -99,11 +100,10 @@ export class CadacThree {
   private shapesToRotate: CadacThreeShapeRotation[] = [];
   private mainLight: DirectionalLight = new DirectionalLight(0xffffff, 1);
   private readonly UPDATE_CAMERA_TIMEOUT = 200;
+  // private clickObjectsListener: CadacClickObjectListenerData[] = [];
   private debouncedObjectChangedEmitter = debounce(
     this.handleObjectChangedEmitter.bind(this)
   );
-
-  // private clickObjectsListener: CadacClickObjectListenerData[] = [];
 
   constructor(options?: CadacThreeOptions) {
     this.options = { ...this.options, ...options?.sceneOptions };
@@ -117,6 +117,38 @@ export class CadacThree {
 
   public get SceneShapes(): CadacThreeShape[] {
     return this.sceneShapes;
+  }
+
+  public updateObjectColor(color: string, object?: CadacThreeShape) {
+    const updatedObject = object || this.selectedObject;
+    updatedObject.material.color.set(color);
+    updatedObject.material.needsUpdate = true;
+    updatedObject.children.forEach(child => {
+      if (child instanceof LineSegments) {
+        const contrastColor = calculateContrastColor(color);
+        child.material.color.set(contrastColor);
+        child.material.needsUpdate = true;
+      }
+    });
+  }
+
+  public updateObjectGeometry(
+    geometry: BufferGeometry,
+    object?: CadacThreeShape
+  ): void {
+    // const geometryType = object.geometry.constructor.name;
+    const updatedObject = object || this.selectedObject;
+    updatedObject.geometry.dispose();
+    updatedObject.geometry = geometry;
+    updatedObject.geometry.computeBoundingBox();
+    updatedObject.geometry.computeBoundingSphere();
+    updatedObject.children.forEach(child => {
+      if (child instanceof LineSegments) {
+        child.geometry.dispose();
+        child.geometry = new EdgesGeometry(updatedObject.geometry);
+      }
+    });
+    this.updateObjectPosition();
   }
 
   public createScene(): void {
@@ -582,18 +614,18 @@ export class CadacThree {
     this.scene.add(this.gridHelper);
   }
 
-  public setLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
-    const edges = new EdgesGeometry(shape.geometry);
-    const line = new LineSegments(edges, new LineBasicMaterial({ color }));
-    shape.add(line);
-  }
-
   // public setEventClickListener({
   //   object,
   //   callback,
   // }: CadacClickObjectListenerData) {
   //   this.clickObjectsListener.push({ object, callback });
   // }
+
+  public setLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
+    const edges = new EdgesGeometry(shape.geometry);
+    const line = new LineSegments(edges, new LineBasicMaterial({ color }));
+    shape.add(line);
+  }
 
   public loadModel(model: string, callback: (obj: Group) => void) {
     const loader = new OBJLoader();

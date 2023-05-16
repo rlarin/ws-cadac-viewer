@@ -66,7 +66,7 @@ export type CadacMergeMesh = {
 };
 
 export type CadacObjectData = {
-  object: THREE.Object3D;
+  object: CadacThreeShape;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
   scale?: THREE.Vector3;
@@ -89,4 +89,9 @@ export type CadacEventData = {
   payload?: any;
 };
 
-export type CadacThreeShape = THREE.Mesh | THREE.Line | THREE.Points | any;
+export type CadacThreeShape =
+  | THREE.Mesh
+  | THREE.Line
+  | THREE.Points
+  | THREE.Object3D
+  | any;
