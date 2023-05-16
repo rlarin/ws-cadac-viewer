@@ -54,7 +54,7 @@ npm i --save-dev @types/three
 Import the _CadacThreeViewer_ module in your Angular application.
 
   ```typescript
-  import {CadacThreeViewerModule} from 'ngx-cadac-three-viewer';
+  import { CadacThreeViewerModule } from 'ngx-cadac-three-viewer';
 
 @NgModule({
   imports: [CadacThreeViewerModule]
@@ -68,7 +68,7 @@ export class AppModule {
 - Initialize a new instance of the **CadacThree** class, which will handle the setup and rendering of your 3D scene.
 
 ```typescript
-import {CadacThree, CadacUnits} from "ngx-cadac-three-viewer";
+import { CadacThree, CadacUnits } from "ngx-cadac-three-viewer";
 
 export class AppComponent implements AfterViewInit, OnDestroy {
   public cadacThreeHandler: CadacThree = new CadacThree({
@@ -97,7 +97,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
 ```html
 
-<cadac-three-viewer [cadacThreeHandler]="cadacThreeHandler"/>
+<cadac-three-viewer [cadacThreeHandler]="cadacThreeHandler" />
 ```
 
 ### 4. Add 3D objects to the scene.
@@ -152,24 +152,24 @@ this.cadacThreeHandler.animateShapeRotation(cube, 0, 0.01, 0);
 
 // Subtract the sphere from the cube
 const sub = handler.csgSubtract(
-    {mesh: cube, position: new Vector3(10, 0, 0)},
-    {mesh: sphere, position: new Vector3(10, 0, 0)},
+    { mesh: cube, position: new Vector3(10, 0, 0) },
+    { mesh: sphere, position: new Vector3(10, 0, 0) },
     CadacCSGOperation.SUBTRACT,
     '#09ff00'
   );
 
 // Union the sphere and the cube
 const int = handler.csgIntersect(
-  {mesh: cube, position: new Vector3(0, 10, 0)},
-  {mesh: sphere, position: new Vector3(0, 10, 0)},
+  { mesh: cube, position: new Vector3(0, 10, 0) },
+  { mesh: sphere, position: new Vector3(0, 10, 0) },
   CadacCSGOperation.INTERSECT,
   '#ff0000'
 );
 
 // Union the sphere and the cube
 const union = handler.csgUnion(
-  {mesh: box, position: new Vector3(0, 0, 10)},
-  {mesh: sphere, position: new Vector3(0, 0, 10)},
+  { mesh: box, position: new Vector3(0, 0, 10) },
+  { mesh: sphere, position: new Vector3(0, 0, 10) },
   CadacCSGOperation.UNION,
   '#e3b107'
 );
@@ -205,6 +205,9 @@ of the 3D scene.
 | **createCapsule**           | Creates a new capsule.                     |
 | **createCircle**            | Creates a new circle.                      |
 | **createPlane**             | Creates a new plane.                       |
+| **updateObjectOpacity**     | Updates the opacity of an object.          |
+| **updateObjectColor**       | Updates the color of an object.            |
+| **updateObjectGeometry**    | Updates the geometry of an object.         |
 | **mergeMeshes**             | Merges multiple meshes into a single mesh. |
 | **csgSubtract**             | CSG subtract operation.                    |
 | **csgUnion**                | CSG union operation.                       |
@@ -252,6 +255,18 @@ export const DEFAULTS_CADAC = {
   CAMERA_LOOK_AT: new THREE.Vector3(0, 0, 0)
 }
 
+export declare enum CadacPlanes {
+  XY = "XY",
+  YZ = "YZ",
+  XZ = "XZ"
+}
+
+export type CadacThreeOptions = {
+  defaultUnits?: CadacUnits;
+  elRef?: ElementRef;
+  sceneOptions?: CadacThreeSceneOptions;
+};
+
 export type CadacThreeSceneOptions = {
   elRef?: ElementRef,
   scene?: THREE.Scene,
@@ -266,11 +281,32 @@ export type CadacMergeMesh = {
   position: THREE.Vector3,
 }
 
+export type CadacObjectData = {
+  object: CadacThreeShape;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  scale?: THREE.Vector3;
+  geometry?: BoxGeometry | SphereGeometry | CylinderGeometry | Geometry;
+};
+
+export declare enum CadacEventDataTypes {
+  OBJECT_SELECTED = "OBJECT_SELECTED",
+  OBJECT_CHANGED = "OBJECT_CHANGED",
+  TOGGLE_RESTRICTED_PLANE = "TOGGLE_RESTRICTED_PLANE"
+}
+
+export type CadacEventData = {
+  type: CadacEventDataTypes;
+  payload?: any;
+};
+
 export type CadacThreeShape = THREE.Mesh | THREE.Line | THREE.Points
 ```
 
 ```text
-get SceneShapes(): CadacThreeShape[];
+updateObjectOpacity(opacity: number, object?: CadacThreeShape): void;
+updateObjectColor(color: string, object?: CadacThreeShape): void;
+updateObjectGeometry(geometry: BufferGeometry, object?: CadacThreeShape): void;
 createScene(): void;
 dispose(): void;
 createCube(width?: number, height?: number, depth?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").BoxGeometry, import("three").MeshBasicMaterial>;
@@ -280,10 +316,10 @@ createCylinder(radiusTop?: number, radiusBottom?: number, height?: number, radia
 createCapsule(radius?: number, height?: number, capSegments?: number, radialSegments?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").CapsuleGeometry, import("three").MeshBasicMaterial>;
 createCircle(radius?: number, segments?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").CircleGeometry, import("three").MeshBasicMaterial>;
 createPlane(width?: number, height?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").PlaneGeometry, import("three").MeshBasicMaterial>;
-mergeMeshes(meshes: CadacMergeMesh[], color?: string, addToScene?: boolean): Mesh<import("three").BufferGeometry, import("three").MeshPhongMaterial>;
-csgSubtract(meshes1: CadacMergeMesh, meshes2: CadacMergeMesh, operation?: CadacCSGOperation, color?: string, addToScene?: boolean): Mesh<import("three").BufferGeometry, Material | Material[]>;
-csgIntersect(meshes1: CadacMergeMesh, meshes2: CadacMergeMesh, operation?: CadacCSGOperation, color?: string, addToScene?: boolean): Mesh<import("three").BufferGeometry, Material | Material[]>;
-csgUnion(meshes1: CadacMergeMesh, meshes2: CadacMergeMesh, operation?: CadacCSGOperation, color?: string, addToScene?: boolean): Mesh<import("three").BufferGeometry, Material | Material[]>;
+mergeMeshes(meshes: CadacMergeMesh[], color?: string, addToScene?: boolean): Mesh<BufferGeometry<import("three").NormalBufferAttributes>, import("three").MeshPhongMaterial>;
+csgSubtract(meshes1: CadacMergeMesh, meshes2: CadacMergeMesh, operation?: CadacCSGOperation, color?: string, addToScene?: boolean): Mesh<BufferGeometry<import("three").NormalBufferAttributes>, Material | Material[]>;
+csgIntersect(meshes1: CadacMergeMesh, meshes2: CadacMergeMesh, operation?: CadacCSGOperation, color?: string, addToScene?: boolean): Mesh<BufferGeometry<import("three").NormalBufferAttributes>, Material | Material[]>;
+csgUnion(meshes1: CadacMergeMesh, meshes2: CadacMergeMesh, operation?: CadacCSGOperation, color?: string, addToScene?: boolean): Mesh<BufferGeometry<import("three").NormalBufferAttributes>, Material | Material[]>;
 createText(text: string, fontSize?: number, position?: Vector3, color?: string, addToScene?: boolean): any;
 toggleOrbitControls(active: boolean): void;
 toggleTransformControls(mesh: Object3D | undefined, active: boolean): void;

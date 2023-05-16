@@ -1,6 +1,6 @@
 {
   "name": "ngx-cadac-viewer",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "scripts": {
     "format": "prettier --write \"**/src/**/*.{js,ts,json,css,scss,html}\""
   },
