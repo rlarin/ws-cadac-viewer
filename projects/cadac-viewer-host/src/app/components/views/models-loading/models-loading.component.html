@@ -1,0 +1,53 @@
+<div class="grid my-2">
+  <div class="col-3 align-content-start">
+    <div class="card flex justify-content-center">
+      <p-toast></p-toast>
+      <p-fieldset [toggleable]="true" class="w-12">
+        <ng-template pTemplate="header">
+          <div class="flex align-items-center text-primary">
+            <span class="pi pi-folder-open mr-2"></span>
+            <span class="font-bold text-lg">Open Model</span>
+          </div>
+        </ng-template>
+        <div class="p-inputgroup">
+          <span class="p-inputgroup-addon">
+            <i class="pi pi-file-import"></i>
+          </span>
+          <input
+            (change)="onFileChange($event)"
+            pInputText
+            placeholder="Load Model"
+            type="file" />
+        </div>
+      </p-fieldset>
+    </div>
+
+    <div class="card flex justify-content-center">
+      <p-toast></p-toast>
+      <p-fieldset [toggleable]="true" class="w-12">
+        <ng-template pTemplate="header">
+          <div class="flex align-items-center text-primary">
+            <span class="pi pi-cog mr-2"></span>
+            <span class="font-bold text-lg">Properties</span>
+          </div>
+        </ng-template>
+
+        <div class="flex flex-column justify-content-center w-12">
+          <h4 class="my-2">
+            Opacity <span>{{ parameters.opacity }} %</span>
+          </h4>
+
+          <div
+            class="flex flex-row justify-content-center align-content-center align-items-center w-full">
+            <p-slider
+              [(ngModel)]="parameters.opacity"
+              class="w-full"></p-slider>
+          </div>
+        </div>
+      </p-fieldset>
+    </div>
+  </div>
+  <div class="col-9 align-content-center">
+    <ngx-cadac-viewer [cadacThreeHandler]="handler" [id]="'poc'" />
+  </div>
+</div>

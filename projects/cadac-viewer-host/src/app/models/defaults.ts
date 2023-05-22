@@ -10,15 +10,17 @@ export const topMenuItems = [
         target: '_parent',
       },
       {
-        label: 'Delete',
-        icon: 'pi pi-fw pi-trash',
+        label: 'Models Loading Example',
+        icon: 'pi pi-fw pi-file-import',
+        url: 'models-loading',
+        target: '_parent',
       },
       {
         separator: true,
       },
       {
-        label: 'Export',
-        icon: 'pi pi-fw pi-external-link',
+        label: 'Export Model',
+        icon: 'pi pi-fw pi-file-export',
       },
     ],
   },

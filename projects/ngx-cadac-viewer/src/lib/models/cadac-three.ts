@@ -56,6 +56,9 @@ import { DragControls } from 'three/examples/jsm/controls/DragControls';
 import { useCreateRestrictedPlane } from '../helpers/planes-helper';
 import { Subject } from 'rxjs';
 import { calculateContrastColor, debounce } from '../helpers/utility-functions';
+import ObjCadacLoader from '../loaders/obj-loader';
+import PrimCadacLoader from '../loaders/prim-loader';
+import MtlCadacLoader from '../loaders/mtl-loader';
 
 export class CadacThree {
   public selectedObject: CadacThreeShape | undefined = undefined;
@@ -96,7 +99,8 @@ export class CadacThree {
   };
   private restrictedQuadrants: [] = [];
   private axesHelperSize = 15;
-  private transformControlsCurrentMode: 'translate' | 'rotate' = 'translate';
+  private transformControlsCurrentMode: 'translate' | 'rotate' | 'scale' =
+    'translate';
   private shapesToRotate: CadacThreeShapeRotation[] = [];
   private mainLight: DirectionalLight = new DirectionalLight(0xffffff, 1);
   private readonly UPDATE_CAMERA_TIMEOUT = 200;
@@ -558,7 +562,7 @@ export class CadacThree {
     this.scene.add(ambientLight);
   }
 
-  public setAxisHelper(size = 15) {
+  public setAxisHelper(size = 15, fontSize = 1) {
     this.axesHelperSize = size;
     this.axesHelper = new AxesHelper(this.axesHelperSize);
     const x = new Troika.Text();
@@ -567,9 +571,9 @@ export class CadacThree {
     x.text = 'X';
     y.text = 'Y';
     z.text = 'Z';
-    x.fontSize = y.fontSize = z.fontSize = 1;
+    x.fontSize = y.fontSize = z.fontSize = fontSize;
 
-    x.position.x = y.position.y = z.position.z = this.axesHelperSize + 1;
+    x.position.x = y.position.y = z.position.z = this.axesHelperSize + fontSize;
 
     x.position.y = x.fontSize / 2;
     y.position.x = (y.fontSize / 2) * -1;
@@ -636,10 +640,31 @@ export class CadacThree {
     shape.add(line);
   }
 
-  public loadModel(model: string, callback: (obj: Group) => void) {
+  public loadPrimModel(
+    { content, filename }: { content: string; filename: string },
+    callback?: (obj: Group) => void
+  ) {
+    PrimCadacLoader(this, { content, filename }, callback);
+  }
+
+  public loadMtlModel(
+    { content, filename }: { content: string; filename: string },
+    callback?: (obj: Group) => void
+  ) {
+    MtlCadacLoader(this, { content, filename }, callback);
+  }
+
+  public loadObjModel(
+    { content, filename }: { content: string; filename: string },
+    callback?: (obj: Group) => void
+  ) {
+    ObjCadacLoader(this, { content, filename }, callback);
+  }
+
+  public loadModel(modelUrl: string, callback: (obj: Group) => void) {
     const loader = new OBJLoader();
     loader.load(
-      model,
+      modelUrl,
       obj => {
         callback(obj);
       },
@@ -777,6 +802,10 @@ export class CadacThree {
         break;
       case 'r':
         this.transformControlsCurrentMode = 'rotate';
+        this.transformControls.setMode(this.transformControlsCurrentMode);
+        break;
+      case 's':
+        this.transformControlsCurrentMode = 'scale';
         this.transformControls.setMode(this.transformControlsCurrentMode);
         break;
       case 't':

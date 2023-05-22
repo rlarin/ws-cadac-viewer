@@ -17,9 +17,20 @@ import { ToastModule } from 'primeng/toast';
 import { ColorPickerModule } from 'primeng/colorpicker';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { ModelsLoadingComponent } from './components/views/models-loading/models-loading.component';
+import { FileUploadModule } from 'primeng/fileupload';
+import { ImageModule } from 'primeng/image';
+import { InputTextModule } from 'primeng/inputtext';
+import { FieldsetModule } from 'primeng/fieldset';
+import { SliderModule } from 'primeng/slider';
 
 @NgModule({
-  declarations: [AppComponent, CubePocComponent, HomeComponent],
+  declarations: [
+    AppComponent,
+    CubePocComponent,
+    HomeComponent,
+    ModelsLoadingComponent,
+  ],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -35,6 +46,11 @@ import { InputNumberModule } from 'primeng/inputnumber';
     ColorPickerModule,
     InputSwitchModule,
     InputNumberModule,
+    FileUploadModule,
+    ImageModule,
+    InputTextModule,
+    FieldsetModule,
+    SliderModule,
   ],
   providers: [],
   bootstrap: [AppComponent],

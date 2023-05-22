@@ -26,6 +26,7 @@ export const CsgHandler = ({ handler, parameters }: HandlerType) => {
     parameters.position.y,
     parameters.position.z
   );
+
   handler.setLineSegments(cube, '#046e00');
   handler.setAmbientLight();
   handler.setAxisHelper(30);

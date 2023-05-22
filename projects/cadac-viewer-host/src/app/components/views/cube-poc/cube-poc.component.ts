@@ -1,7 +1,7 @@
 import { AfterViewInit, Component } from '@angular/core';
 
 import { CsgHandler } from '../../../libs/csgHandler';
-import { BoxGeometry, Vector3 } from 'three';
+import { BoxGeometry, Euler, Vector3 } from 'three';
 import {
   CadacObjectData,
   CadacPlanes,
@@ -22,7 +22,9 @@ export class CubePocComponent implements AfterViewInit {
     width: 20,
     height: 10,
     depth: 10,
-    position: new Vector3(10, 5, 5),
+    position: new Vector3(0, 0, 0),
+    rotation: new Euler(0, 0, 0),
+    scale: new Vector3(1, 1, 1),
     color: '#09ff00',
     opacity: 100,
   };
@@ -63,6 +65,11 @@ export class CubePocComponent implements AfterViewInit {
 
   objectChangedHandler(objectData: CadacObjectData) {
     this.parameters.position = objectData.position;
+    this.parameters.scale = objectData.scale;
+    this.parameters.rotation = objectData.rotation;
+    this.parameters.width = objectData.object.geometry.parameters.width;
+    this.parameters.height = objectData.object.geometry.parameters.height;
+    this.parameters.depth = objectData.object.geometry.parameters.depth;
   }
 
   selectedObjectHandler(objectData: any) {
