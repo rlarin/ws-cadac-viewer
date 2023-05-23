@@ -1,12 +1,6 @@
-import { AfterViewInit, Component } from '@angular/core';
-import { CadacThree, CadacUnits } from 'ngx-cadac-viewer';
-import { MessageService } from 'primeng/api';
-import {
-  DirectionalLight,
-  DoubleSide,
-  MeshPhongMaterial,
-  Vector3,
-} from 'three';
+import { AfterViewInit, Component, signal } from '@angular/core';
+import { CadacThree, calculateContrastColor } from 'ngx-cadac-viewer';
+import { MessageService, TreeNode } from 'primeng/api';
 
 export enum CadacFileTypes {
   PRIM = 'prim',
@@ -27,10 +21,44 @@ export class ModelsLoadingComponent implements AfterViewInit {
   public handler = new CadacThree();
   public parameters = {
     opacity: 50,
+    color: '#f4f4f4',
   };
-  public uploadedFiles: any[] = [];
+  public colorInputBgColor = signal(this.parameters.color);
+  public modelsTreeNode: TreeNode[] = [
+    {
+      key: '0',
+      label: 'Models',
+      data: 'Models Folder',
+      icon: 'pi pi-fw pi-inbox',
+      expanded: true,
+      children: [
+        {
+          key: '0-0',
+          label: 'Box',
+          data: 'Box model',
+          icon: 'pi pi-fw pi-box',
+        },
+        {
+          key: '0-1',
+          label: 'Cylinder',
+          data: 'Cylinder model',
+          icon: 'pi pi-fw pi-database',
+        },
+      ],
+    },
+  ];
+
+  public objObjectContent: string = null;
 
   constructor(private messageService: MessageService) {}
+
+  get getColor() {
+    return this.parameters.color;
+  }
+
+  get getContrastColor() {
+    return calculateContrastColor(this.parameters.color, true);
+  }
 
   ngAfterViewInit(): void {
     this.handler.createScene();
@@ -43,14 +71,15 @@ export class ModelsLoadingComponent implements AfterViewInit {
     this.handler.setAmbientLight();
   }
 
-  onFileChange($event: Event) {
+  onFileChange($event: Event, resetScene = true) {
     const file = ($event.target as HTMLInputElement).files[0];
     const fileType = file.name.split('.').pop();
     const fileReader: FileReader = new FileReader();
 
     fileReader.onloadend = () => {
       const content = fileReader.result as string;
-      this.resetScene();
+      if (resetScene) this.resetScene();
+
       switch (fileType) {
         case CadacFileTypes.PRIM:
           this.handler.loadPrimModel(
@@ -65,6 +94,7 @@ export class ModelsLoadingComponent implements AfterViewInit {
           );
           break;
         case CadacFileTypes.OBJ:
+          this.objObjectContent = content;
           this.handler.loadObjModel(
             { content, filename: file.name },
             this.handleCallback.bind(this)
@@ -79,45 +109,55 @@ export class ModelsLoadingComponent implements AfterViewInit {
   }
 
   handleCallback = (object: any) => {
-    console.log(object);
-    const maxMax = new Vector3(0, 0, 0);
-    object.children.forEach((mesh: any) => {
-      const material = new MeshPhongMaterial({
-        color: mesh.material.color,
-        side: DoubleSide,
-        transparent: true,
-      });
-
-      mesh.material = material;
-      mesh.geometry.computeBoundingBox();
-      const bboxMax = mesh.geometry.boundingBox.max;
-      maxMax.x = Math.max(bboxMax.x, maxMax.x);
-      maxMax.y = Math.max(bboxMax.y, maxMax.y);
-      maxMax.z = Math.max(bboxMax.z, maxMax.z);
-    });
-
-    this.handler.camera.position.set(maxMax.x * 2, maxMax.y * 2, maxMax.z * 2);
-    this.handler.camera.lookAt(0, 0, 0);
-    const absMax = Math.max(maxMax.x, maxMax.y, maxMax.z);
-
-    this.handler.toggleOrbitControls(true);
-    this.handler.setLineSegments(object, '#046e00');
-    this.handler.camera.fov = 65;
-    this.handler.camera.far = 100000;
-    this.handler.camera.near = 0.1;
-    this.handler.camera.updateProjectionMatrix();
-    this.handler.setAxisHelper(absMax + absMax / 3, 10);
-
-    const lightXY = new DirectionalLight(0x888888);
-    const lightZY = new DirectionalLight(0x888888);
-    const positionConst = absMax;
-    lightXY.position.set(positionConst, positionConst, 1);
-    lightZY.position.set(
-      positionConst * -1,
-      positionConst * -1,
-      positionConst * -1
-    );
-    this.handler.scene.add(lightXY);
-    // this.handler.scene.add(lightZY);
+    this.handler.selectedObject = object;
+    if ((this.parameters.color = object.children[0].material)) {
+      this.parameters.color = object.children[0].material.color.getHexString();
+      this.colorInputBgColor.set(this.parameters.color);
+      this.handleObjectOpacity();
+    }
   };
+
+  onNodeSelect({ node }) {
+    this.resetScene();
+    this.handler.loadObjModelFromUrl(
+      {
+        baseUrl: 'assets/models/',
+        objName: node.label,
+      },
+      this.handleCallback.bind(this),
+      this.handleProgress.bind(this)
+    );
+  }
+
+  handleProgress(percent) {
+    console.log(`${percent}% loaded`);
+  }
+
+  handleSliderChange(value) {
+    this.handleObjectOpacity();
+  }
+
+  handleColorChange({ value }) {
+    this.colorInputBgColor.set(value);
+    if (this.handler.selectedObject) {
+      this.handler.selectedObject.children[0].material.color.set(value);
+    }
+  }
+
+  createSnapshot($event: MouseEvent) {
+    $event.stopPropagation();
+    const snapshotDataUrl = this.handler.createSnapshot();
+
+    const link = document.createElement('a');
+    link.href = snapshotDataUrl;
+    link.download = 'model.png';
+    link.click();
+  }
+
+  private handleObjectOpacity() {
+    if (this.handler.selectedObject) {
+      this.handler.selectedObject.children[0].material.opacity =
+        this.parameters.opacity / 100;
+    }
+  }
 }

@@ -5,18 +5,66 @@
       <p-fieldset [toggleable]="true" class="w-12">
         <ng-template pTemplate="header">
           <div class="flex align-items-center text-primary">
-            <span class="pi pi-folder-open mr-2"></span>
-            <span class="font-bold text-lg">Open Model</span>
+            <ng-container *ngIf="!handler.selectedObject; else modelLoaded">
+              <span class="pi pi-folder mr-2"></span>
+              <span class="font-bold text-lg">Open Model</span>
+            </ng-container>
+
+            <ng-template #modelLoaded>
+              <span class="pi pi-folder-open mr-2"></span>
+              <span class="font-bold text-lg">Model </span>
+              <span class="text-sm mx-2"
+                >({{ handler.selectedObject.uuid.split('-')[4] }})</span
+              >
+            </ng-template>
           </div>
         </ng-template>
+
+        <div
+          class="flex flex-row align-content-center align-items-center justify-content-between">
+          <p-button
+            (click)="createSnapshot($event)"
+            icon="pi pi-camera"
+            label="Snapshot"></p-button>
+
+          <p-button
+            (click)="resetScene()"
+            icon="pi pi-undo"
+            label="Clear Scene"
+            styleClass="p-button-danger"></p-button>
+        </div>
+        <h4 class="my-2">From Server</h4>
+        <div class="card flex justify-content-center">
+          <p-tree
+            (onNodeSelect)="onNodeSelect($event)"
+            [value]="modelsTreeNode"
+            class="w-full"
+            selectionMode="single"></p-tree>
+        </div>
+
+        <h4 class="my-2">Load *.obj model from local file</h4>
         <div class="p-inputgroup">
           <span class="p-inputgroup-addon">
             <i class="pi pi-file-import"></i>
           </span>
           <input
             (change)="onFileChange($event)"
+            accept=".obj"
             pInputText
-            placeholder="Load Model"
+            placeholder="Load Obj Model"
+            type="file" />
+        </div>
+
+        <h4 class="my-2">Load *.mtl material from local file</h4>
+        <div class="p-inputgroup">
+          <span class="p-inputgroup-addon">
+            <i class="pi pi-file-import"></i>
+          </span>
+          <input
+            (change)="onFileChange($event, false)"
+            accept=".mtl"
+            pInputText
+            placeholder="Load material"
             type="file" />
         </div>
       </p-fieldset>
@@ -40,8 +88,30 @@
           <div
             class="flex flex-row justify-content-center align-content-center align-items-center w-full">
             <p-slider
+              (ngModelChange)="handleSliderChange($event)"
               [(ngModel)]="parameters.opacity"
               class="w-full"></p-slider>
+          </div>
+        </div>
+
+        <div class="flex flex-column justify-content-center w-12">
+          <h4 class="my-2">
+            Color <span>{{ colorInputBgColor() }}</span>
+          </h4>
+          <input
+            [(ngModel)]="parameters.color"
+            [style.background-color]="colorInputBgColor()"
+            [style.color]="getContrastColor"
+            class="my-1"
+            pInputText
+            type="text" />
+          <div
+            class="flex flex-row justify-content-center align-content-center align-items-center w-full">
+            <p-colorPicker
+              (onChange)="handleColorChange($event)"
+              [(ngModel)]="parameters.color"
+              [inline]="true"
+              class="w-full"></p-colorPicker>
           </div>
         </div>
       </p-fieldset>

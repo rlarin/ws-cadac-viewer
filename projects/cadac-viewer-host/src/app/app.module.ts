@@ -23,6 +23,7 @@ import { ImageModule } from 'primeng/image';
 import { InputTextModule } from 'primeng/inputtext';
 import { FieldsetModule } from 'primeng/fieldset';
 import { SliderModule } from 'primeng/slider';
+import { TreeModule } from 'primeng/tree';
 
 @NgModule({
   declarations: [
@@ -51,6 +52,7 @@ import { SliderModule } from 'primeng/slider';
     InputTextModule,
     FieldsetModule,
     SliderModule,
+    TreeModule,
   ],
   providers: [],
   bootstrap: [AppComponent],

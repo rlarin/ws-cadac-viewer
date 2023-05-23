@@ -1,0 +1,122 @@
+{
+    "IsNew": false,
+    "Tenant": null,
+    "ID": "bbdd310f-9b1e-4b0c-b259-15d694ba2c07",
+    "Name": "Box",
+    "Type": "Primitive",
+    "ImageURL": "data:image/png;base64,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",
+    "PropertySets": [{
+            "Name": "General",
+            "Properties": [{
+                    "Name": "Thumbnail",
+                    "Value": "Box.png",
+                    "Required": false,
+                    "Definition": {
+                        "Description": "Upload a thumbnail as png",
+                        "Type": "FileUpload",
+                        "OptionValue": null,
+                        "OptionLabel": null,
+                        "OptionsList": [
+                            ".png"
+                        ]
+                    }
+                }, {
+                    "Name": "Material",
+                    "Value": "Default",
+                    "Required": false,
+                    "Definition": {
+                        "Description": null,
+                        "Type": "String",
+                        "OptionValue": null,
+                        "OptionLabel": null,
+                        "OptionsList": null
+                    }
+                }
+            ]
+        }, {
+            "Name": "Dimensions",
+            "Properties": [{
+                    "Name": "Length",
+                    "Value": "500",
+                    "Required": false,
+                    "Definition": {
+                        "Description": null,
+                        "Type": "String",
+                        "OptionValue": null,
+                        "OptionLabel": null,
+                        "OptionsList": null
+                    }
+                }, {
+                    "Name": "Width",
+                    "Value": "400",
+                    "Required": false,
+                    "Definition": {
+                        "Description": null,
+                        "Type": "String",
+                        "OptionValue": null,
+                        "OptionLabel": null,
+                        "OptionsList": null
+                    }
+                }, {
+                    "Name": "Height",
+                    "Value": "300",
+                    "Required": false,
+                    "Definition": {
+                        "Description": null,
+                        "Type": "String",
+                        "OptionValue": null,
+                        "OptionLabel": null,
+                        "OptionsList": null
+                    }
+                }, {
+                    "Name": "Visible",
+                    "Value": "1",
+                    "hasFormula": null,
+                    "Required": false,
+                    "Definition": {
+                        "Code": "",
+                        "Description": "Utility",
+                        "DataType": null,
+                        "ReadOnly": null,
+                        "Hidden": null,
+                        "Type": "Boolean",
+                        "Decimals": null,
+                        "Unit": null,
+                        "OptionValue": null,
+                        "OptionLabel": null,
+                        "OptionsList": null
+                    },
+                    "Groups": null
+                }
+            ]
+        }, {
+            "Name": "Revit",
+            "Properties": [{
+                    "Name": "FamilyName",
+                    "Value": "Box.rfa",
+                    "Required": false,
+                    "Definition": {
+                        "Description": "Upload a Revit family",
+                        "Type": "FileUpload",
+                        "OptionValue": null,
+                        "OptionLabel": null,
+                        "OptionsList": [
+                            ".rfa"
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "DirectionProperties": [{
+            "Direction": "X",
+            "Name": "Length"
+        }, {
+            "Direction": "Y",
+            "Name": "Width"
+        }, {
+            "Direction": "Z",
+            "Name": "Height"
+        }
+    ]
+}

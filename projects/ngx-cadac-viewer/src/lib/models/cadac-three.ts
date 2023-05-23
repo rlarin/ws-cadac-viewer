@@ -56,7 +56,7 @@ import { DragControls } from 'three/examples/jsm/controls/DragControls';
 import { useCreateRestrictedPlane } from '../helpers/planes-helper';
 import { Subject } from 'rxjs';
 import { calculateContrastColor, debounce } from '../helpers/utility-functions';
-import ObjCadacLoader from '../loaders/obj-loader';
+import { ObjCadacLoader, ObjCadacLoaderFromUrl } from '../loaders/obj-loader';
 import PrimCadacLoader from '../loaders/prim-loader';
 import MtlCadacLoader from '../loaders/mtl-loader';
 
@@ -112,6 +112,9 @@ export class CadacThree {
     this.handleObjectChangedEmitter.bind(this)
   );
 
+  private eventKeydownHandlerRef = this.onDocumentKeydown.bind(this);
+  private eventMouseClickHandlerRef = this.onDocumentMouseClick.bind(this);
+
   constructor(options?: CadacThreeOptions) {
     this.options = { ...this.options, ...options?.sceneOptions };
     DEFAULTS_CADAC.UNIT = this.options.defaultUnits || DEFAULTS_CADAC.UNIT;
@@ -134,14 +137,21 @@ export class CadacThree {
 
   public updateObjectColor(color: string, object?: CadacThreeShape) {
     const updatedObject = object || this.selectedObject;
-    updatedObject.material.color.set(color);
-    updatedObject.material.needsUpdate = true;
+    if (
+      !(updatedObject instanceof LineSegments) &&
+      updatedObject.material instanceof Material
+    ) {
+      updatedObject.material.color.set(color);
+      updatedObject.material.needsUpdate = true;
+    }
     updatedObject.children.forEach(child => {
       if (child instanceof LineSegments) {
         const contrastColor = calculateContrastColor(color);
         child.material.color.set(contrastColor);
         child.material.needsUpdate = true;
       }
+
+      this.updateObjectColor(color, child as CadacThreeShape);
     });
   }
 
@@ -214,7 +224,7 @@ export class CadacThree {
       this.options.defaultUnits
     );
     this.scene.fog = new Fog(this.scene.background, nearFog, farFog);
-
+    this.selectedObject = undefined;
     this.setRestrictedPlanes();
     this.registerEventListeners();
     this.animate();
@@ -223,11 +233,7 @@ export class CadacThree {
   public dispose() {
     this.renderer.dispose();
     this.orbitControls.dispose();
-    window.removeEventListener('keydown', this.onDocumentKeydown.bind(this));
-    this.renderer.domElement.removeEventListener(
-      'click',
-      this.onDocumentMouseClick.bind(this)
-    );
+    this.removeEventListeners();
   }
 
   public createCube(
@@ -587,9 +593,9 @@ export class CadacThree {
       x.color =
         calculateContrastColor(this.options.sceneBackground);
 
-    this.scene.add(x);
-    this.scene.add(y);
-    this.scene.add(z);
+    this.axesHelper.add(x);
+    this.axesHelper.add(y);
+    this.axesHelper.add(z);
 
     this.updateRestrictedPlanes();
 
@@ -651,7 +657,7 @@ export class CadacThree {
     { content, filename }: { content: string; filename: string },
     callback?: (obj: Group) => void
   ) {
-    MtlCadacLoader(this, { content, filename }, callback);
+    MtlCadacLoader(this, this.selectedObject, { content, filename }, callback);
   }
 
   public loadObjModel(
@@ -659,6 +665,14 @@ export class CadacThree {
     callback?: (obj: Group) => void
   ) {
     ObjCadacLoader(this, { content, filename }, callback);
+  }
+
+  public loadObjModelFromUrl(
+    { baseUrl, objName },
+    callback?: (obj: Group) => void,
+    progress?: (xhr: ProgressEvent<EventTarget>) => void
+  ) {
+    ObjCadacLoaderFromUrl(this, { baseUrl, objName }, callback, progress);
   }
 
   public loadModel(modelUrl: string, callback: (obj: Group) => void) {
@@ -715,6 +729,16 @@ export class CadacThree {
     this.updateRestrictedPlanes();
   }
 
+  public createSnapshot() {
+    this.renderer.setSize(
+      this.renderer.domElement.width,
+      this.renderer.domElement.height,
+      true
+    );
+    this.renderer.render(this.scene, this.camera);
+    return this.renderer.domElement.toDataURL('image/png');
+  }
+
   private animate() {
     this.shapesToRotate.forEach(shape => {
       shape.shape.rotation.x += shape.xSpeed;
@@ -759,10 +783,19 @@ export class CadacThree {
   }
 
   private registerEventListeners() {
-    window.addEventListener('keydown', this.onDocumentKeydown.bind(this));
+    this.removeEventListeners();
+    window.addEventListener('keydown', this.eventKeydownHandlerRef);
     this.renderer.domElement.addEventListener(
       'click',
-      this.onDocumentMouseClick.bind(this)
+      this.eventMouseClickHandlerRef
+    );
+  }
+
+  private removeEventListeners() {
+    window.removeEventListener('keydown', this.eventKeydownHandlerRef);
+    this.renderer.domElement.removeEventListener(
+      'click',
+      this.eventMouseClickHandlerRef
     );
   }
 
@@ -787,31 +820,41 @@ export class CadacThree {
   }
 
   private onDocumentKeydown(event: KeyboardEvent) {
-    switch (event.key) {
-      case 'g':
-        this.gridHelper.visible = !this.gridHelper.visible;
-        break;
-      case 'x':
-        this.transformControls.showX = !this.transformControls.showX;
-        break;
-      case 'y':
-        this.transformControls.showY = !this.transformControls.showY;
-        break;
-      case 'z':
-        this.transformControls.showZ = !this.transformControls.showZ;
-        break;
-      case 'r':
-        this.transformControlsCurrentMode = 'rotate';
-        this.transformControls.setMode(this.transformControlsCurrentMode);
-        break;
-      case 's':
-        this.transformControlsCurrentMode = 'scale';
-        this.transformControls.setMode(this.transformControlsCurrentMode);
-        break;
-      case 't':
-        this.transformControlsCurrentMode = 'translate';
-        this.transformControls.setMode(this.transformControlsCurrentMode);
-        break;
+    if (event.ctrlKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      const axesHelper = this.scene.children.find(
+        child => child.type === 'AxesHelper'
+      );
+      switch (event.key) {
+        case 'a':
+          axesHelper.visible = !axesHelper.visible;
+          break;
+        case 'g':
+          this.gridHelper.visible = !this.gridHelper.visible;
+          break;
+        case 'x':
+          this.transformControls.showX = !this.transformControls.showX;
+          break;
+        case 'y':
+          this.transformControls.showY = !this.transformControls.showY;
+          break;
+        case 'z':
+          this.transformControls.showZ = !this.transformControls.showZ;
+          break;
+        case 'r':
+          this.transformControlsCurrentMode = 'rotate';
+          this.transformControls.setMode(this.transformControlsCurrentMode);
+          break;
+        case 's':
+          this.transformControlsCurrentMode = 'scale';
+          this.transformControls.setMode(this.transformControlsCurrentMode);
+          break;
+        case 't':
+          this.transformControlsCurrentMode = 'translate';
+          this.transformControls.setMode(this.transformControlsCurrentMode);
+          break;
+      }
     }
   }
 
