@@ -17,6 +17,7 @@ import { UnitsHelper } from '../helpers/units-helper';
 import {
   AmbientLight,
   AxesHelper,
+  Box3,
   BufferGeometry,
   Color,
   DirectionalLight,
@@ -67,18 +68,12 @@ export class CadacThree {
   public scene: Scene = new Scene();
   public camera: PerspectiveCamera = new PerspectiveCamera();
   public elRef: ElementRef = new ElementRef(null);
-  public sceneShapes: CadacThreeShape[] = [];
   public eventSubject$: Subject<CadacEventData> = new Subject();
   public orbitControls: OrbitControls = new OrbitControls(
     this.camera,
     this.renderer.domElement
   );
   public transformControls: TransformControls = new TransformControls(
-    this.camera,
-    this.renderer.domElement
-  );
-  public dragControls = new DragControls(
-    this.sceneShapes,
     this.camera,
     this.renderer.domElement
   );
@@ -97,6 +92,12 @@ export class CadacThree {
       XZ: false,
     },
   };
+  private sceneShapes: CadacThreeShape[] = [];
+  // public dragControls = new DragControls(
+  //   this.sceneShapes,
+  //   this.camera,
+  //   this.renderer.domElement
+  // );
   private restrictedQuadrants: [] = [];
   private axesHelperSize = 15;
   private transformControlsCurrentMode: 'translate' | 'rotate' | 'scale' =
@@ -111,7 +112,6 @@ export class CadacThree {
   private debouncedObjectChangedEmitter = debounce(
     this.handleObjectChangedEmitter.bind(this)
   );
-
   private eventKeydownHandlerRef = this.onDocumentKeydown.bind(this);
   private eventMouseClickHandlerRef = this.onDocumentMouseClick.bind(this);
 
@@ -127,6 +127,15 @@ export class CadacThree {
 
   public get SceneShapes(): CadacThreeShape[] {
     return this.sceneShapes;
+  }
+
+  public addShapeToScene(shape: CadacThreeShape) {
+    this.sceneShapes.push(shape);
+    // this.dragControls = new DragControls(
+    //   this.sceneShapes,
+    //   this.camera,
+    //   this.renderer.domElement
+    // );
   }
 
   public updateObjectOpacity(opacity: number, object?: CadacThreeShape) {
@@ -233,6 +242,7 @@ export class CadacThree {
   public dispose() {
     this.renderer.dispose();
     this.orbitControls.dispose();
+    // this.dragControls.dispose();
     this.removeEventListeners();
   }
 
@@ -693,29 +703,13 @@ export class CadacThree {
 
   public updateObjectPosition() {
     if (this.selectedObject) {
-      const { x, y, z } = this.selectedObject.position;
-      const { depth, height, width } = (this.selectedObject as CadacThreeShape)
-        .geometry.parameters;
-
-      this.selectedObject.position.set(
-        this.options.restrictToPositiveQuadrant?.YZ
-          ? x - width / 2 > 0
-            ? x
-            : width / 2
-          : x,
-        this.options.restrictToPositiveQuadrant?.XZ
-          ? y - height / 2 > 0
-            ? y
-            : height / 2
-          : y,
-        this.options.restrictToPositiveQuadrant?.XY
-          ? z - depth / 2 > 0
-            ? z
-            : depth / 2
-          : z
-      );
-
-      this.debouncedObjectChangedEmitter();
+      if (this.selectedObject.isGroup) {
+        this.selectedObject.children.forEach(object =>
+          this.updateObjectPositionProcessor(object)
+        );
+      } else {
+        this.updateObjectPositionProcessor(this.selectedObject);
+      }
     }
   }
 
@@ -737,6 +731,35 @@ export class CadacThree {
     );
     this.renderer.render(this.scene, this.camera);
     return this.renderer.domElement.toDataURL('image/png');
+  }
+
+  private updateObjectPositionProcessor(object) {
+    const { x, y, z } = object.position;
+    const bbox = new Box3().setFromObject(object);
+
+    const width = bbox.max.x - bbox.min.x;
+    const height = bbox.max.y - bbox.min.y;
+    const depth = bbox.max.z - bbox.min.z;
+
+    object.position.set(
+      this.options.restrictToPositiveQuadrant?.YZ
+        ? x - width / 2 > 0
+          ? x
+          : width / 2
+        : x,
+      this.options.restrictToPositiveQuadrant?.XZ
+        ? y - height / 2 > 0
+          ? y
+          : height / 2
+        : y,
+      this.options.restrictToPositiveQuadrant?.XY
+        ? z - depth / 2 > 0
+          ? z
+          : depth / 2
+        : z
+    );
+
+    this.debouncedObjectChangedEmitter();
   }
 
   private animate() {
@@ -803,20 +826,40 @@ export class CadacThree {
     this.updateObjectPosition();
   }
 
+  private tcMouseDownListenerProcessor(object) {
+    ((object as Mesh).material as Material).transparent = true;
+    this.tempProperties[object.uuid] = (
+      (object as Mesh).material as Material
+    ).opacity;
+    ((object as Mesh).material as Material).opacity = 0.5;
+  }
+
   private tcMouseDownListener() {
     this.orbitControls.enabled = false;
-    ((this.selectedObject as Mesh).material as Material).transparent = true;
-    this.tempProperties['opacity'] = (
-      (this.selectedObject as Mesh).material as Material
-    ).opacity;
-    ((this.selectedObject as Mesh).material as Material).opacity = 0.5;
+    if (this.selectedObject.isGroup) {
+      (this.selectedObject as Group).children.forEach(child => {
+        this.tcMouseDownListenerProcessor(child);
+      });
+    } else {
+      this.tcMouseDownListenerProcessor(this.selectedObject);
+    }
+  }
+
+  private tcMouseUpListenerProcessor(object) {
+    ((object as Mesh).material as Material).opacity =
+      this.tempProperties[object.uuid];
+    delete this.tempProperties[object.uuid];
   }
 
   private tcMouseUpListener() {
     this.orbitControls.enabled = true;
-    ((this.selectedObject as Mesh).material as Material).opacity =
-      this.tempProperties['opacity'];
-    delete this.tempProperties['opacity'];
+    if (this.selectedObject.isGroup) {
+      (this.selectedObject as Group).children.forEach(child => {
+        this.tcMouseUpListenerProcessor(child);
+      });
+    } else {
+      this.tcMouseUpListenerProcessor(this.selectedObject);
+    }
   }
 
   private onDocumentKeydown(event: KeyboardEvent) {

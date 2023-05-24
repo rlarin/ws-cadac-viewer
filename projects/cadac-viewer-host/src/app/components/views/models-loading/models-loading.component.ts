@@ -22,6 +22,7 @@ export class ModelsLoadingComponent implements AfterViewInit {
   public parameters = {
     opacity: 50,
     color: '#f4f4f4',
+    scale: 1,
   };
   public colorInputBgColor = signal(this.parameters.color);
   public sceneObjsTreeNode: TreeNode[] = [
@@ -122,6 +123,8 @@ export class ModelsLoadingComponent implements AfterViewInit {
 
   handleCallback = (object: any) => {
     this.handler.selectedObject = object;
+    this.handler.addShapeToScene(object);
+
     if ((this.parameters.color = object.children[0].material)) {
       this.parameters.color = object.children[0].material.color.getHexString();
       this.colorInputBgColor.set(this.parameters.color);
@@ -193,6 +196,12 @@ export class ModelsLoadingComponent implements AfterViewInit {
 
   onSceneNodeUnselect({ node }) {
     node.data.visible = true;
+  }
+
+  handleSliderScaleChange(value) {
+    if (this.handler.selectedObject) {
+      this.handler.selectedObject.scale.set(value, value, value);
+    }
   }
 
   private handleObjectOpacity() {

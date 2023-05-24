@@ -243,10 +243,17 @@ export const useGetIntersects = (
   mouse.y =
     -((event.clientY - container.offsetTop) / container.offsetHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(scene.children, false);
-  const intersectedObject = intersects.find(
-    intersectedEl => intersectedEl.object.uuid === objectId
+  const intersects = raycaster.intersectObjects(
+    scene.children,
+    object['isGroup']
   );
+
+  const intersectedObject =
+    intersects.length > 0 && object['isGroup']
+      ? { object: intersects[0].object.parent }
+      : intersects.find(
+          intersectedEl => intersectedEl.object.uuid === objectId
+        );
   if (intersectedObject?.object) {
     if (callback) {
       callback(event, intersectedObject?.object);
