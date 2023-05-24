@@ -1,5 +1,9 @@
-import { AfterViewInit, Component, signal } from '@angular/core';
-import { CadacThree, calculateContrastColor } from 'ngx-cadac-viewer';
+import { AfterViewInit, Component, OnDestroy, signal } from '@angular/core';
+import {
+  CadacPlanes,
+  CadacThree,
+  calculateContrastColor,
+} from 'ngx-cadac-viewer';
 import { MessageService, TreeNode } from 'primeng/api';
 
 export enum CadacFileTypes {
@@ -17,8 +21,9 @@ export enum CadacFileTypes {
   styleUrls: ['./models-loading.component.scss'],
   providers: [MessageService],
 })
-export class ModelsLoadingComponent implements AfterViewInit {
+export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
   public handler = new CadacThree();
+  public CadacPlanes: typeof CadacPlanes = CadacPlanes;
   public parameters = {
     opacity: 50,
     color: '#f4f4f4',
@@ -62,6 +67,8 @@ export class ModelsLoadingComponent implements AfterViewInit {
 
   public objObjectContent: string = null;
 
+  private windowResizeRef = this.windowResizeHandler.bind(this);
+
   constructor(private messageService: MessageService) {}
 
   get getColor() {
@@ -76,6 +83,15 @@ export class ModelsLoadingComponent implements AfterViewInit {
     this.handler.createScene();
     this.handler.setAmbientLight();
     this.handler.setMainDirectionalLight();
+    this.setEventListeners();
+  }
+
+  ngOnDestroy(): void {
+    this.removeEventListeners();
+  }
+
+  windowResizeHandler() {
+    this.handler.updateContainerSize();
   }
 
   resetScene() {
@@ -130,6 +146,11 @@ export class ModelsLoadingComponent implements AfterViewInit {
       this.colorInputBgColor.set(this.parameters.color);
       this.handleObjectOpacity();
     }
+
+    this.handler.setLineSegments(
+      object,
+      calculateContrastColor(this.parameters.color, true)
+    );
 
     const objNode: TreeNode = {
       key: object.uuid,
@@ -204,10 +225,23 @@ export class ModelsLoadingComponent implements AfterViewInit {
     }
   }
 
+  handleCameraPlaneView($event: MouseEvent, plane: CadacPlanes) {
+    $event.stopPropagation();
+    this.handler.setCameraToPlane(plane);
+  }
+
   private handleObjectOpacity() {
     if (this.handler.selectedObject) {
       this.handler.selectedObject.children[0].material.opacity =
         this.parameters.opacity / 100;
     }
+  }
+
+  private setEventListeners() {
+    window.addEventListener('resize', this.windowResizeRef);
+  }
+
+  private removeEventListeners() {
+    window.removeEventListener('resize', this.windowResizeRef);
   }
 }

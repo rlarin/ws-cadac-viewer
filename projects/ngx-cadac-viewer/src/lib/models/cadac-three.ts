@@ -53,7 +53,6 @@ import {
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import * as Troika from 'troika-three-text';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
-import { DragControls } from 'three/examples/jsm/controls/DragControls';
 import { useCreateRestrictedPlane } from '../helpers/planes-helper';
 import { Subject } from 'rxjs';
 import { calculateContrastColor, debounce } from '../helpers/utility-functions';
@@ -93,11 +92,6 @@ export class CadacThree {
     },
   };
   private sceneShapes: CadacThreeShape[] = [];
-  // public dragControls = new DragControls(
-  //   this.sceneShapes,
-  //   this.camera,
-  //   this.renderer.domElement
-  // );
   private restrictedQuadrants: [] = [];
   private axesHelperSize = 15;
   private transformControlsCurrentMode: 'translate' | 'rotate' | 'scale' =
@@ -108,7 +102,6 @@ export class CadacThree {
   private tempProperties: {
     [key: string]: any;
   } = {};
-  // private clickObjectsListener: CadacClickObjectListenerData[] = [];
   private debouncedObjectChangedEmitter = debounce(
     this.handleObjectChangedEmitter.bind(this)
   );
@@ -592,7 +585,7 @@ export class CadacThree {
     x.position.x = y.position.y = z.position.z = this.axesHelperSize + fontSize;
 
     x.position.y = x.fontSize / 2;
-    y.position.x = (y.fontSize / 2) * -1;
+    y.position.x = (y.fontSize / 2) * -0.5;
     z.position.y = z.fontSize / 2;
 
     y.rotateY(Math.PI / 4);
@@ -651,9 +644,13 @@ export class CadacThree {
   // }
 
   public setLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
-    const edges = new EdgesGeometry(shape.geometry);
-    const line = new LineSegments(edges, new LineBasicMaterial({ color }));
-    shape.add(line);
+    if (shape.isGroup) {
+      shape.children.forEach(child => {
+        this.setLineSegmentsProcessor(child as CadacThreeShape, color);
+      });
+    } else {
+      this.setLineSegmentsProcessor(shape, color);
+    }
   }
 
   public loadPrimModel(
@@ -733,6 +730,28 @@ export class CadacThree {
     return this.renderer.domElement.toDataURL('image/png');
   }
 
+  public setCameraToPlane(plane: CadacPlanes) {
+    this.updateCameraPosition(plane);
+  }
+
+  public updateContainerSize() {
+    this.renderer.setSize(
+      this.elRef.nativeElement?.offsetWidth,
+      this.elRef.nativeElement?.offsetHeight,
+      true
+    );
+    this.camera.aspect =
+      this.elRef.nativeElement?.offsetWidth /
+      this.elRef.nativeElement?.offsetHeight;
+    this.camera.updateProjectionMatrix();
+  }
+
+  private setLineSegmentsProcessor(shape: CadacThreeShape, color = '#a4a4a4') {
+    const edges = new EdgesGeometry(shape.geometry);
+    const line = new LineSegments(edges, new LineBasicMaterial({ color }));
+    shape.add(line);
+  }
+
   private updateObjectPositionProcessor(object) {
     const { x, y, z } = object.position;
     const bbox = new Box3().setFromObject(object);
@@ -783,7 +802,7 @@ export class CadacThree {
     }
   }
 
-  private updateCameraPosition() {
+  private updateCameraPosition(plane: CadacPlanes = CadacPlanes.XY) {
     this.transformControls.removeFromParent();
     const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
     const center = boundingBox.getCenter(new Vector3());
@@ -792,11 +811,27 @@ export class CadacThree {
     const fov = this.camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs((maxDim / 4) * Math.tan(fov * 2));
 
-    cameraZ *= 1.2; // zoom out a little so that objects don't fill the screen
+    cameraZ *= 1.5; // zoom out a little so that objects don't fill the screen
 
-    this.camera.position.z = cameraZ;
-    this.camera.position.x = center.x;
-    this.camera.position.y = center.y;
+    switch (plane) {
+      case CadacPlanes.XY:
+        this.camera.position.z = cameraZ;
+        this.camera.position.x = center.x;
+        this.camera.position.y = center.y;
+        break;
+      case CadacPlanes.XZ:
+        this.camera.position.z = center.y;
+        this.camera.position.x = center.x;
+        this.camera.position.y = cameraZ;
+        break;
+      case CadacPlanes.YZ:
+        this.camera.position.z = center.x;
+        this.camera.position.x = cameraZ;
+        this.camera.position.y = center.y;
+        break;
+    }
+
+    this.axesHelperSize = maxDim;
     this.camera.lookAt(center);
     this.camera.updateProjectionMatrix();
     this.axesHelper = new AxesHelper(cameraZ * 2);
@@ -863,41 +898,39 @@ export class CadacThree {
   }
 
   private onDocumentKeydown(event: KeyboardEvent) {
-    if (event.ctrlKey) {
-      event.preventDefault();
-      event.stopPropagation();
-      const axesHelper = this.scene.children.find(
-        child => child.type === 'AxesHelper'
-      );
-      switch (event.key) {
-        case 'a':
-          axesHelper.visible = !axesHelper.visible;
-          break;
-        case 'g':
-          this.gridHelper.visible = !this.gridHelper.visible;
-          break;
-        case 'x':
-          this.transformControls.showX = !this.transformControls.showX;
-          break;
-        case 'y':
-          this.transformControls.showY = !this.transformControls.showY;
-          break;
-        case 'z':
-          this.transformControls.showZ = !this.transformControls.showZ;
-          break;
-        case 'r':
-          this.transformControlsCurrentMode = 'rotate';
-          this.transformControls.setMode(this.transformControlsCurrentMode);
-          break;
-        case 's':
-          this.transformControlsCurrentMode = 'scale';
-          this.transformControls.setMode(this.transformControlsCurrentMode);
-          break;
-        case 't':
-          this.transformControlsCurrentMode = 'translate';
-          this.transformControls.setMode(this.transformControlsCurrentMode);
-          break;
-      }
+    event.preventDefault();
+    event.stopPropagation();
+    const axesHelper = this.scene.children.find(
+      child => child.type === 'AxesHelper'
+    );
+    switch (event.key) {
+      case 'a':
+        axesHelper.visible = !axesHelper.visible;
+        break;
+      case 'g':
+        this.gridHelper.visible = !this.gridHelper.visible;
+        break;
+      case 'x':
+        this.transformControls.showX = !this.transformControls.showX;
+        break;
+      case 'y':
+        this.transformControls.showY = !this.transformControls.showY;
+        break;
+      case 'z':
+        this.transformControls.showZ = !this.transformControls.showZ;
+        break;
+      case 'r':
+        this.transformControlsCurrentMode = 'rotate';
+        this.transformControls.setMode(this.transformControlsCurrentMode);
+        break;
+      case 's':
+        this.transformControlsCurrentMode = 'scale';
+        this.transformControls.setMode(this.transformControlsCurrentMode);
+        break;
+      case 't':
+        this.transformControlsCurrentMode = 'translate';
+        this.transformControls.setMode(this.transformControlsCurrentMode);
+        break;
     }
   }
 

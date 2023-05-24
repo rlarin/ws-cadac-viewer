@@ -25,11 +25,8 @@ const adjustScene = (scope, object) => {
   const absMax = Math.max(maxMax.x, maxMax.y, maxMax.z);
 
   scope.toggleOrbitControls(true);
-  scope.setLineSegments(object, '#046e00');
-  // scope.camera.fov = 65;
   scope.camera.far = 100000;
   scope.camera.near = 0.1;
-  // scope.camera.updateProjectionMatrix();
   scope.setAxisHelper(absMax + absMax / 3, 10);
 
   const lightXY = new DirectionalLight(0x888888);
@@ -42,7 +39,6 @@ const adjustScene = (scope, object) => {
     positionConst * -1
   );
   scope.scene.add(lightXY);
-  // scope.sceneShapes.push(object);
   scope.updateLightPosition();
   scope.updateCameraPosition();
 };

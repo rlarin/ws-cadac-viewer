@@ -140,5 +140,23 @@
         class="w-full"
         selectionMode="checkbox"></p-tree>
     </div>
+
+    <div class="my-3">
+      <h4 class="my-2">Set camera plane</h4>
+      <div class="flex flex-row justify-content-around">
+        <p-button
+          (click)="handleCameraPlaneView($event, CadacPlanes.XY)"
+          label="Set to XY"
+          styleClass="p-button-rounded"></p-button>
+        <p-button
+          (click)="handleCameraPlaneView($event, CadacPlanes.XZ)"
+          label="Set to XZ"
+          styleClass="p-button-rounded"></p-button>
+        <p-button
+          (click)="handleCameraPlaneView($event, CadacPlanes.YZ)"
+          label="Set to YZ"
+          styleClass="p-button-rounded"></p-button>
+      </div>
+    </div>
   </div>
 </div>

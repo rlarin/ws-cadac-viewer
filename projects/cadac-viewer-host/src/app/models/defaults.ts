@@ -1,6 +1,6 @@
 export const topMenuItems = [
   {
-    label: 'Examples',
+    label: 'POC Examples',
     icon: 'pi pi-fw pi-inbox',
     items: [
       {
