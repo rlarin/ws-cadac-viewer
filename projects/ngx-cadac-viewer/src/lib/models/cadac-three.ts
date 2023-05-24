@@ -746,6 +746,14 @@ export class CadacThree {
     this.camera.updateProjectionMatrix();
   }
 
+  public toggleSegmentLines(value: boolean) {
+    this.selectedObject.traverse(child => {
+      if (child instanceof LineSegments) {
+        child.visible = value;
+      }
+    });
+  }
+
   private setLineSegmentsProcessor(shape: CadacThreeShape, color = '#a4a4a4') {
     const edges = new EdgesGeometry(shape.geometry);
     const line = new LineSegments(edges, new LineBasicMaterial({ color }));
@@ -831,7 +839,6 @@ export class CadacThree {
         break;
     }
 
-    this.axesHelperSize = maxDim;
     this.camera.lookAt(center);
     this.camera.updateProjectionMatrix();
     this.axesHelper = new AxesHelper(cameraZ * 2);

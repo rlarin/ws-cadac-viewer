@@ -140,7 +140,7 @@
         class="w-full"
         selectionMode="checkbox"></p-tree>
     </div>
-
+    <p-divider></p-divider>
     <div class="my-3">
       <h4 class="my-2">Set camera plane</h4>
       <div class="flex flex-row justify-content-around">
@@ -156,6 +156,19 @@
           (click)="handleCameraPlaneView($event, CadacPlanes.YZ)"
           label="Set to YZ"
           styleClass="p-button-rounded"></p-button>
+      </div>
+    </div>
+    <p-divider></p-divider>
+    <div class="my-3">
+      <h4 class="my-2">Toggle Segment Lines</h4>
+      <div class="flex flex-row justify-content-start">
+        <p-inputSwitch
+          (onChange)="handleToggleSegmentLinesChange($event)"
+          [(ngModel)]="parameters.segmentLines"
+          id="segmentLines"></p-inputSwitch>
+        <label class="ml-2" for="segmentLines"
+          >{{ parameters.segmentLines ? 'Hide' : 'Show' }} Segment Lines</label
+        >
       </div>
     </div>
   </div>

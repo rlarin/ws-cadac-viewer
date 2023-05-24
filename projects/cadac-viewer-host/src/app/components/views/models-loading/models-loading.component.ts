@@ -5,6 +5,7 @@ import {
   calculateContrastColor,
 } from 'ngx-cadac-viewer';
 import { MessageService, TreeNode } from 'primeng/api';
+import { InputSwitchOnChangeEvent } from 'primeng/inputswitch';
 
 export enum CadacFileTypes {
   PRIM = 'prim',
@@ -28,6 +29,7 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
     opacity: 50,
     color: '#f4f4f4',
     scale: 1,
+    segmentLines: true,
   };
   public colorInputBgColor = signal(this.parameters.color);
   public sceneObjsTreeNode: TreeNode[] = [
@@ -228,6 +230,10 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
   handleCameraPlaneView($event: MouseEvent, plane: CadacPlanes) {
     $event.stopPropagation();
     this.handler.setCameraToPlane(plane);
+  }
+
+  handleToggleSegmentLinesChange($event: InputSwitchOnChangeEvent) {
+    this.handler.toggleSegmentLines($event.checked);
   }
 
   private handleObjectOpacity() {

@@ -24,6 +24,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FieldsetModule } from 'primeng/fieldset';
 import { SliderModule } from 'primeng/slider';
 import { TreeModule } from 'primeng/tree';
+import { DividerModule } from 'primeng/divider';
 
 @NgModule({
   declarations: [
@@ -53,6 +54,7 @@ import { TreeModule } from 'primeng/tree';
     FieldsetModule,
     SliderModule,
     TreeModule,
+    DividerModule,
   ],
   providers: [],
   bootstrap: [AppComponent],
