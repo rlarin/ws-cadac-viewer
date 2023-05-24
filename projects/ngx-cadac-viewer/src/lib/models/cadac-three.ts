@@ -227,6 +227,8 @@ export class CadacThree {
     );
     this.scene.fog = new Fog(this.scene.background, nearFog, farFog);
     this.selectedObject = undefined;
+    this.orbitControls.enableDamping = true;
+    this.orbitControls.dampingFactor = 0.05;
     this.setRestrictedPlanes();
     this.registerEventListeners();
     this.animate();
