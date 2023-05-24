@@ -24,6 +24,17 @@ export class ModelsLoadingComponent implements AfterViewInit {
     color: '#f4f4f4',
   };
   public colorInputBgColor = signal(this.parameters.color);
+  public sceneObjsTreeNode: TreeNode[] = [
+    {
+      key: '0',
+      label: 'Scene Objects',
+      data: 'Scene Objects Folder',
+      icon: 'pi pi-fw pi-inbox',
+      expanded: true,
+      children: [],
+      selectable: false,
+    },
+  ];
   public modelsTreeNode: TreeNode[] = [
     {
       key: '0',
@@ -67,6 +78,7 @@ export class ModelsLoadingComponent implements AfterViewInit {
   }
 
   resetScene() {
+    this.sceneObjsTreeNode[0].children = [];
     this.handler.createScene();
     this.handler.setAmbientLight();
   }
@@ -115,6 +127,27 @@ export class ModelsLoadingComponent implements AfterViewInit {
       this.colorInputBgColor.set(this.parameters.color);
       this.handleObjectOpacity();
     }
+
+    const objNode: TreeNode = {
+      key: object.uuid,
+      label: object.name,
+      data: object,
+      icon: 'pi pi-fw pi-box',
+      children: [],
+      selectable: true,
+    };
+
+    this.handler.selectedObject.children.forEach(child => {
+      objNode.children.push({
+        key: child.uuid,
+        label: child.name,
+        data: child,
+        icon: 'pi pi-fw pi-box',
+        selectable: true,
+      });
+    });
+
+    this.sceneObjsTreeNode[0].children = [objNode];
   };
 
   onNodeSelect({ node }) {
@@ -152,6 +185,14 @@ export class ModelsLoadingComponent implements AfterViewInit {
     link.href = snapshotDataUrl;
     link.download = 'model.png';
     link.click();
+  }
+
+  onSceneNodeSelect({ node }) {
+    node.data.visible = false;
+  }
+
+  onSceneNodeUnselect({ node }) {
+    node.data.visible = true;
   }
 
   private handleObjectOpacity() {

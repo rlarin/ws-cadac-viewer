@@ -98,13 +98,6 @@
           <h4 class="my-2">
             Color <span>{{ colorInputBgColor() }}</span>
           </h4>
-          <input
-            [(ngModel)]="parameters.color"
-            [style.background-color]="colorInputBgColor()"
-            [style.color]="getContrastColor"
-            class="my-1"
-            pInputText
-            type="text" />
           <div
             class="flex flex-row justify-content-center align-content-center align-items-center w-full">
             <p-colorPicker
@@ -117,7 +110,18 @@
       </p-fieldset>
     </div>
   </div>
-  <div class="col-9 align-content-center">
+  <div class="col-6 align-content-center">
     <ngx-cadac-viewer [cadacThreeHandler]="handler" [id]="'poc'" />
+  </div>
+  <div class="col-3 align-content-center">
+    <h4 class="my-2">Scene (Select/unselect to toggle visibility)</h4>
+    <div class="card flex justify-content-center">
+      <p-tree
+        (onNodeSelect)="onSceneNodeSelect($event)"
+        (onNodeUnselect)="onSceneNodeUnselect($event)"
+        [value]="sceneObjsTreeNode"
+        class="w-full"
+        selectionMode="checkbox"></p-tree>
+    </div>
   </div>
 </div>
