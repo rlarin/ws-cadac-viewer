@@ -1,16 +1,13 @@
 import { CadacThreeShape } from '../../models/types';
+import useSetSegmentLineProcessor from './use-set-segment-line-processor';
 
-const useSetLineSegments = (
-  scope,
-  shape: CadacThreeShape,
-  color = '#a4a4a4'
-) => {
+const useSetLineSegments = (shape: CadacThreeShape, color = '#a4a4a4') => {
   if (shape.isGroup) {
     shape.children.forEach(child => {
-      scope.setLineSegmentsProcessor(child as CadacThreeShape, color);
+      useSetSegmentLineProcessor(child as CadacThreeShape, color);
     });
   } else {
-    scope.setLineSegmentsProcessor(shape, color);
+    useSetSegmentLineProcessor(shape, color);
   }
 };
 

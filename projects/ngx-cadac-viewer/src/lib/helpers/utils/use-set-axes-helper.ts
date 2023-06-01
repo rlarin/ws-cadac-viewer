@@ -1,7 +1,7 @@
 import { DEFAULTS_CADAC } from '../../models/types';
 import { UnitsHelper } from '../units-helper';
 import { AxesHelper } from 'three';
-import Troika from 'troika-three-text';
+import { Text } from 'troika-three-text';
 import { calculateContrastColor } from './utility-functions';
 
 const useSetAxesHelper = (
@@ -14,9 +14,9 @@ const useSetAxesHelper = (
 
   scope.axesHelperSize = size || max * 1.5;
   scope.axesHelper = new AxesHelper(scope.axesHelperSize);
-  const x = new Troika.Text();
-  const y = new Troika.Text();
-  const z = new Troika.Text();
+  const x = new Text();
+  const y = new Text();
+  const z = new Text();
   x.text = 'X';
   y.text = 'Y';
   z.text = 'Z';

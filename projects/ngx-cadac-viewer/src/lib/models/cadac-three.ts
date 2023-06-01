@@ -14,7 +14,6 @@ import {
   CadacPlanes,
   CadacTransformControlsModes,
 } from './types';
-import { UnitsHelper } from '../helpers/units-helper';
 import {
   AmbientLight,
   AxesHelper,
@@ -42,18 +41,15 @@ import {
   useCreateSphere,
   useCreateText,
   useCsgOperator,
-  useGetIntersects,
   useMergeMeshes,
 } from '../helpers/shapes-helper';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import { useCreateRestrictedPlane } from '../helpers/planes-helper';
 import { Subject } from 'rxjs';
 import { debounce } from '../helpers/utils/utility-functions';
 import { ObjCadacLoader, ObjCadacLoaderFromUrl } from '../loaders/obj-loader';
 import PrimCadacLoader from '../loaders/prim-loader';
 import MtlCadacLoader from '../loaders/mtl-loader';
 import GltfCadacLoader from '../loaders/gltf-loader';
-import anime from 'animejs/lib/anime.es.js';
 import updatePrimOpacity from '../helpers/primitives/update/update-prim-opacity';
 import updatePrimColor from '../helpers/primitives/update/update-prim-color';
 import updatePrimGeometry from '../helpers/primitives/update/update-prim-geometry';
@@ -76,6 +72,11 @@ import useRemoveLineSegmentsProcessor from '../helpers/utils/use-remove-line-seg
 import updatePrimPositionProcessor from '../helpers/primitives/update/update-prim-position-processor';
 import useAnimate from '../helpers/utils/use-animate';
 import useUpdateLightPosition from '../helpers/utils/use-update-light-position';
+import useRemoveElFromSceneByProp from '../helpers/utils/use-remove-el-from-scene-by-prop';
+import useUpdateCameraPosition from '../helpers/utils/use-update-camera-position';
+import useDocumentKeydown from '../helpers/utils/use-document-keydown';
+import useDocumentMouseClick from '../helpers/utils/use-document-mouse-click';
+import useRestrictPlane from '../helpers/utils/use-restrict-plane';
 
 export class CadacThree extends EventDispatcher {
   public selectedObject: CadacThreeShape | undefined = undefined;
@@ -523,7 +524,7 @@ export class CadacThree extends EventDispatcher {
   }
 
   public setLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
-    return useSetLineSegments(this, shape, color);
+    return useSetLineSegments(shape, color);
   }
 
   public removeLineSegments(shape: CadacThreeShape) {
@@ -623,66 +624,11 @@ export class CadacThree extends EventDispatcher {
   }
 
   private removeElementFromSceneByProp(prop: string, value) {
-    const el = this.scene.children.find(child => child[prop] === value);
-    if (el) {
-      this.scene.remove(el);
-    }
+    return useRemoveElFromSceneByProp(this, prop, value);
   }
 
   private updateCameraPosition(plane: CadacPlanes = CadacPlanes.XY) {
-    this.removeElementFromSceneByProp('uuid', this.transformControls.uuid);
-    this.removeElementFromSceneByProp('uuid', this.gridHelper.uuid);
-    const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
-    const center = boundingBox.getCenter(new Vector3());
-    const size = boundingBox.getSize(new Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = this.camera.fov * (Math.PI / 180);
-    let cameraZ = Math.abs((maxDim / 4) * Math.tan(fov * 2));
-
-    cameraZ *= 1.8; // zoom out a little so that objects don't fill the screen
-
-    const cameraFinalPosition = this.camera.position.clone();
-
-    switch (plane) {
-      case CadacPlanes.XY:
-        cameraFinalPosition.z = cameraZ;
-        cameraFinalPosition.x = center.x;
-        cameraFinalPosition.y = center.y;
-        break;
-      case CadacPlanes.XZ:
-        cameraFinalPosition.z = center.y;
-        cameraFinalPosition.x = center.x;
-        cameraFinalPosition.y = cameraZ;
-        break;
-      case CadacPlanes.YZ:
-        cameraFinalPosition.z = center.x;
-        cameraFinalPosition.x = cameraZ;
-        cameraFinalPosition.y = center.y;
-        break;
-    }
-
-    this.axesHelper = new AxesHelper(maxDim * 2);
-    this.scene.add(this.transformControls);
-    this.scene.add(this.gridHelper);
-
-    anime({
-      targets: [this.camera.position],
-      y: cameraFinalPosition.y,
-      x: cameraFinalPosition.x,
-      z: cameraFinalPosition.z,
-      easing: 'easeInOutQuad',
-      duration: DEFAULTS_CADAC.ANIMATION_DURATION,
-      update: () => {
-        this.camera.lookAt(center);
-        this.camera.updateProjectionMatrix();
-        this.transformControls.updateMatrix();
-        this.gridHelper.updateMatrix();
-        this.orbitControls.update();
-      },
-      complete: () => {
-        console.log('Anime complete');
-      },
-    });
+    return useUpdateCameraPosition(this, plane);
   }
 
   private registerEventListeners() {
@@ -746,136 +692,32 @@ export class CadacThree extends EventDispatcher {
   }
 
   private onDocumentKeydown(event: KeyboardEvent) {
-    if (document.activeElement?.tagName === 'body') {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    const axesHelper = this.scene.children.find(
-      child => child.type === 'AxesHelper'
-    );
-    switch (event.key) {
-      case 'a':
-        axesHelper.visible = !axesHelper.visible;
-        break;
-      case 'g':
-        this.gridHelper.visible = !this.gridHelper.visible;
-        break;
-      case 'x':
-        this.transformControls.showX = !this.transformControls.showX;
-        break;
-      case 'y':
-        this.transformControls.showY = !this.transformControls.showY;
-        break;
-      case 'z':
-        this.transformControls.showZ = !this.transformControls.showZ;
-        break;
-      case 'r':
-        this.transformControlsCurrentMode = CadacTransformControlsModes.ROTATE;
-        this.transformControls.setMode(this.transformControlsCurrentMode);
-        break;
-      case 's':
-        this.transformControlsCurrentMode = CadacTransformControlsModes.SCALE;
-        this.transformControls.setMode(this.transformControlsCurrentMode);
-        break;
-      case 't':
-        this.transformControlsCurrentMode =
-          CadacTransformControlsModes.TRANSLATE;
-        this.transformControls.setMode(this.transformControlsCurrentMode);
-        break;
-    }
+    return useDocumentKeydown(this, event);
   }
 
   private onDocumentMouseClick(event: MouseEvent) {
-    for (let i = 0; i < this.sceneShapes.length; i++) {
-      const shape = this.sceneShapes[i];
-      this.toggleTransformControls(shape, false);
-      const intersectedObject = useGetIntersects(
-        event,
-        shape,
-        this.raycaster,
-        this.scene,
-        this.camera,
-        this.elRef.nativeElement
-      );
-
-      if (intersectedObject) {
-        this.selectedObject = this.scene.getObjectById(intersectedObject.id);
-        const eventData = {
-          payload: {
-            object: this.selectedObject,
-          },
-          type: CadacEventDataTypes.OBJECT_SELECTED,
-        };
-        this.dispatchEvent(eventData);
-
-        this.toggleTransformControls(this.selectedObject, true);
-        this.eventSubject$.next(eventData);
-
-        this.debouncedObjectChangedEmitter();
-        break;
-      } else {
-        this.toggleTransformControls(this.selectedObject, false);
-        const eventData = {
-          payload: {
-            object: this.selectedObject,
-          },
-          type: CadacEventDataTypes.OBJECT_UNSELECTED,
-        };
-        this.eventSubject$.next(eventData);
-        this.dispatchEvent(eventData);
-        this.selectedObject = null;
-      }
-    }
+    return useDocumentMouseClick(this, event);
   }
 
   private createRestrictedPlane(
     plane: CadacPlanes,
     size = this.axesHelperSize,
-    color = '#ff0000',
-    opacity = 0.05
+    color = DEFAULTS_CADAC.DEFAULT_RESTRICTED_PLANE_COLOR,
+    opacity = DEFAULTS_CADAC.DEFAULT_RESTRICTED_PLANE_OPACITY
   ) {
-    switch (plane) {
-      case 'XY':
-        this.restrictedQuadrants['XY'] = useCreateRestrictedPlane({
-          size,
-          color,
-          opacity,
-          position: new Vector3(15, 15, 0),
-        });
-        return this.restrictedQuadrants['XY'];
-      case 'XZ':
-        this.restrictedQuadrants['XZ'] = useCreateRestrictedPlane({
-          size,
-          color: '#ff0000',
-          opacity: 0.05,
-          position: new Vector3(15, 0, 15),
-        }).rotateX(Math.PI / 2);
-        return this.restrictedQuadrants['XZ'];
-      case 'YZ':
-        this.restrictedQuadrants['YZ'] = useCreateRestrictedPlane({
-          size,
-          color: '#ff0000',
-          opacity: 0.05,
-          position: new Vector3(0, 15, 15),
-        }).rotateY(Math.PI / 2);
-        return this.restrictedQuadrants['YZ'];
-    }
+    return useRestrictPlane(this, plane, size, color, opacity);
   }
 
   private setRestrictedPlanes(XY?, YZ?, XZ?) {
     if (this.options.restrictToPositiveQuadrant?.XY) {
-      // this.scene.add(this.restrictedQuadrants['XY']);
       this.scene.add(XY || this.createRestrictedPlane(CadacPlanes.XY));
     }
 
     if (this.options.restrictToPositiveQuadrant?.YZ) {
-      // this.scene.add(this.restrictedQuadrants['YZ']);
       this.scene.add(YZ || this.createRestrictedPlane(CadacPlanes.YZ));
     }
 
     if (this.options.restrictToPositiveQuadrant?.XZ) {
-      // this.scene.add(this.restrictedQuadrants['XZ']);
       this.scene.add(XZ || this.createRestrictedPlane(CadacPlanes.XZ));
     }
   }
