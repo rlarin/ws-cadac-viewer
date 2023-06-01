@@ -20,6 +20,9 @@ const MtlCadacLoader = (
   object.name = selectedObject.name || filename;
   scope.scene.add(object);
   scope.scene.remove(selectedObject);
+  scope.sceneShapes = scope.sceneShapes.filter(
+    shape => shape.id !== selectedObject.id
+  );
   scope.selectedObject = object;
 
   if (callback) {

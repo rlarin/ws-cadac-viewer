@@ -1,4 +1,5 @@
 import {
+  Box3,
   DirectionalLight,
   DoubleSide,
   MeshPhongMaterial,
@@ -7,14 +8,24 @@ import {
 
 const adjustScene = (scope, object) => {
   const maxMax = new Vector3(0, 0, 0);
+  let bboxMax = new Vector3(0, 0, 0);
   object.children.forEach((mesh: any) => {
-    mesh.material = new MeshPhongMaterial({
-      color: mesh.material.color,
-      side: DoubleSide,
-      transparent: true,
-    });
-    mesh.geometry.computeBoundingBox();
-    const bboxMax = mesh.geometry.boundingBox.max;
+    if (mesh.material) {
+      mesh.material = new MeshPhongMaterial({
+        color: mesh.material.color,
+        side: DoubleSide,
+        transparent: true,
+      });
+    }
+
+    if (mesh.geometry) {
+      mesh.geometry.computeBoundingBox();
+      bboxMax = mesh.geometry.boundingBox.max;
+    } else {
+      const boundingBox = new Box3().setFromObject(mesh);
+      bboxMax = boundingBox.max;
+    }
+
     maxMax.x = Math.max(bboxMax.x, maxMax.x);
     maxMax.y = Math.max(bboxMax.y, maxMax.y);
     maxMax.z = Math.max(bboxMax.z, maxMax.z);
@@ -27,7 +38,7 @@ const adjustScene = (scope, object) => {
   scope.toggleOrbitControls(true);
   scope.camera.far = 100000;
   scope.camera.near = 0.1;
-  scope.setAxisHelper(absMax + absMax / 3, 10);
+  scope.setAxisHelper(absMax + absMax / 3, absMax / 25);
 
   const lightXY = new DirectionalLight(0x888888);
   const lightZY = new DirectionalLight(0x888888);

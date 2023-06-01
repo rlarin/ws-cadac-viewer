@@ -250,7 +250,7 @@ export const useGetIntersects = (
 
   const intersectedObject =
     intersects.length > 0 && object['isGroup']
-      ? { object: intersects[0].object.parent }
+      ? { object }
       : intersects.find(
           intersectedEl => intersectedEl.object.uuid === objectId
         );

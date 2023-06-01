@@ -32,6 +32,7 @@ export const DEFAULTS_CADAC = {
   CAMERA_FOV: 50,
   CAMERA_POSITION: new THREE.Vector3(0, 10, 20),
   CAMERA_LOOK_AT: new THREE.Vector3(0, 0, 0),
+  ANIMATION_DURATION: 1000,
 };
 
 export enum CadacPlanes {
@@ -80,8 +81,15 @@ export type CadacClickObjectListenerData = {
 
 export enum CadacEventDataTypes {
   OBJECT_SELECTED = 'OBJECT_SELECTED',
+  OBJECT_UNSELECTED = 'OBJECT_UNSELECTED',
   OBJECT_CHANGED = 'OBJECT_CHANGED',
   TOGGLE_RESTRICTED_PLANE = 'TOGGLE_RESTRICTED_PLANE',
+}
+
+export enum CadacTransformControlsModes {
+  TRANSLATE = 'translate',
+  ROTATE = 'rotate',
+  SCALE = 'scale',
 }
 
 export type CadacEventData = {
@@ -95,3 +103,12 @@ export type CadacThreeShape =
   | THREE.Points
   | THREE.Object3D
   | any;
+
+export enum CadacFileTypes {
+  PRIM = 'prim',
+  OBJ = 'obj',
+  MTL = 'mtl',
+  FBX = 'fbx',
+  GLB = 'glb',
+  GLTF = 'gltf',
+}

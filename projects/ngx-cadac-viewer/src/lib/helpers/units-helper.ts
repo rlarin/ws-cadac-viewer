@@ -53,7 +53,42 @@ export class UnitsHelper {
     scene: Scene,
     unit: CadacUnits = DEFAULTS_CADAC.UNIT
   ) {
-    const boundingBox = new Box3().setFromObject(scene);
+    // const boundingBox = new Box3().setFromObject(scene);
+
+    const maxBbox = new Vector3();
+    const minBbox = new Vector3();
+    scene.children.forEach(child => {
+      if (child['isTransformControls']) {
+        return;
+      }
+      const childBbox = new Box3().setFromObject(child);
+      if (Number.isFinite(childBbox.max.x) && childBbox.max.x > maxBbox.x) {
+        maxBbox.x = childBbox.max.x;
+      }
+
+      if (Number.isFinite(childBbox.min.x) && childBbox.min.x < minBbox.x) {
+        minBbox.x = childBbox.min.x;
+      }
+
+      if (Number.isFinite(childBbox.max.y) && childBbox.max.y > maxBbox.y) {
+        maxBbox.y = childBbox.max.y;
+      }
+
+      if (Number.isFinite(childBbox.min.y) && childBbox.min.y < minBbox.y) {
+        minBbox.y = childBbox.min.y;
+      }
+
+      if (Number.isFinite(childBbox.max.z) && childBbox.max.z > maxBbox.z) {
+        maxBbox.z = childBbox.max.z;
+      }
+
+      if (Number.isFinite(childBbox.min.z) && childBbox.min.z < minBbox.z) {
+        minBbox.z = childBbox.min.z;
+      }
+    });
+
+    const boundingBox = new Box3(minBbox, maxBbox);
+
     const { min, max } = boundingBox;
     const { x: minX, y: minY, z: minZ } = min;
     const { x: maxX, y: maxY, z: maxZ } = max;

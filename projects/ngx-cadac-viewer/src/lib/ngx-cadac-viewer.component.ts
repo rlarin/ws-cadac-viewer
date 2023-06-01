@@ -29,19 +29,21 @@ export class NgxCadacViewerComponent implements AfterViewInit, OnDestroy {
     this.cadacThreeHandler.elRef = this.cadContainer;
     this.cadacThreeHandler.eventSubject$.subscribe(event => {
       const { object } = event.payload;
-      switch (event.type) {
-        case CadacEventDataTypes.OBJECT_SELECTED:
-          this.selectedObjectEmitter.emit({ object });
-          break;
-        case CadacEventDataTypes.OBJECT_CHANGED:
-          this.objectChangedEmitter.emit({
-            object,
-            position: object.position,
-            geometry: object.geometry,
-            rotation: object.rotation,
-            scale: object.scale,
-          });
-          break;
+      if (object) {
+        switch (event.type) {
+          case CadacEventDataTypes.OBJECT_SELECTED:
+            this.selectedObjectEmitter.emit({ object });
+            break;
+          case CadacEventDataTypes.OBJECT_CHANGED:
+            this.objectChangedEmitter.emit({
+              object,
+              position: object?.position,
+              geometry: object?.geometry,
+              rotation: object?.rotation,
+              scale: object?.scale,
+            });
+            break;
+        }
       }
     });
   }

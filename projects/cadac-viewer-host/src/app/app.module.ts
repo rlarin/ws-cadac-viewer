@@ -25,6 +25,12 @@ import { FieldsetModule } from 'primeng/fieldset';
 import { SliderModule } from 'primeng/slider';
 import { TreeModule } from 'primeng/tree';
 import { DividerModule } from 'primeng/divider';
+import { DragDropPrimitivesComponent } from './components/views/drag-drop-primitives/drag-drop-primitives.component';
+import { DragDropModule } from 'primeng/dragdrop';
+import { CardModule } from 'primeng/card';
+import { InputMaskModule } from 'primeng/inputmask';
+import { BadgeModule } from 'primeng/badge';
+import { TagModule } from 'primeng/tag';
 
 @NgModule({
   declarations: [
@@ -32,6 +38,7 @@ import { DividerModule } from 'primeng/divider';
     CubePocComponent,
     HomeComponent,
     ModelsLoadingComponent,
+    DragDropPrimitivesComponent,
   ],
   imports: [
     BrowserModule,
@@ -55,6 +62,11 @@ import { DividerModule } from 'primeng/divider';
     SliderModule,
     TreeModule,
     DividerModule,
+    DragDropModule,
+    CardModule,
+    InputMaskModule,
+    BadgeModule,
+    TagModule,
   ],
   providers: [],
   bootstrap: [AppComponent],

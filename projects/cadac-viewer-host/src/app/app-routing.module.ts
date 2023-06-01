@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { CubePocComponent } from './components/views/cube-poc/cube-poc.component';
 import { HomeComponent } from './components/views/home/home.component';
 import { ModelsLoadingComponent } from './components/views/models-loading/models-loading.component';
+import { DragDropPrimitivesComponent } from './components/views/drag-drop-primitives/drag-drop-primitives.component';
 
 const routes: Routes = [
   {
@@ -12,6 +13,10 @@ const routes: Routes = [
   {
     path: 'models-loading',
     component: ModelsLoadingComponent,
+  },
+  {
+    path: 'drag-drop-primitives',
+    component: DragDropPrimitivesComponent,
   },
   {
     path: '',

@@ -12,6 +12,7 @@ import {
   CadacUnits,
   DEFAULTS_CADAC,
   CadacPlanes,
+  CadacTransformControlsModes,
 } from './types';
 import { UnitsHelper } from '../helpers/units-helper';
 import {
@@ -22,6 +23,7 @@ import {
   Color,
   DirectionalLight,
   EdgesGeometry,
+  EventDispatcher,
   Fog,
   GridHelper,
   Group,
@@ -59,8 +61,10 @@ import { calculateContrastColor, debounce } from '../helpers/utility-functions';
 import { ObjCadacLoader, ObjCadacLoaderFromUrl } from '../loaders/obj-loader';
 import PrimCadacLoader from '../loaders/prim-loader';
 import MtlCadacLoader from '../loaders/mtl-loader';
+import GltfCadacLoader from '../loaders/gltf-loader';
+import anime from 'animejs/lib/anime.es.js';
 
-export class CadacThree {
+export class CadacThree extends EventDispatcher {
   public selectedObject: CadacThreeShape | undefined = undefined;
   public renderer: WebGLRenderer = new WebGLRenderer({ antialias: true });
   public raycaster: Raycaster = new Raycaster();
@@ -68,10 +72,7 @@ export class CadacThree {
   public camera: PerspectiveCamera = new PerspectiveCamera();
   public elRef: ElementRef = new ElementRef(null);
   public eventSubject$: Subject<CadacEventData> = new Subject();
-  public orbitControls: OrbitControls = new OrbitControls(
-    this.camera,
-    this.renderer.domElement
-  );
+  public orbitControls: OrbitControls;
   public transformControls: TransformControls = new TransformControls(
     this.camera,
     this.renderer.domElement
@@ -94,11 +95,11 @@ export class CadacThree {
   private sceneShapes: CadacThreeShape[] = [];
   private restrictedQuadrants: [] = [];
   private axesHelperSize = 15;
-  private transformControlsCurrentMode: 'translate' | 'rotate' | 'scale' =
-    'translate';
+  private transformControlsCurrentMode: CadacTransformControlsModes =
+    CadacTransformControlsModes.TRANSLATE;
   private shapesToRotate: CadacThreeShapeRotation[] = [];
   private mainLight: DirectionalLight = new DirectionalLight(0xffffff, 1);
-  private readonly UPDATE_CAMERA_TIMEOUT = 200;
+  private readonly UPDATE_CAMERA_TIMEOUT = 500;
   private tempProperties: {
     [key: string]: any;
   } = {};
@@ -109,9 +110,14 @@ export class CadacThree {
   private eventMouseClickHandlerRef = this.onDocumentMouseClick.bind(this);
 
   constructor(options?: CadacThreeOptions) {
+    super();
     this.options = { ...this.options, ...options?.sceneOptions };
     DEFAULTS_CADAC.UNIT = this.options.defaultUnits || DEFAULTS_CADAC.UNIT;
     this.elRef = this.options.elRef || this.elRef;
+    this.orbitControls = new OrbitControls(
+      this.camera,
+      this.renderer.domElement
+    );
 
     this.createRestrictedPlane(CadacPlanes.XY);
     this.createRestrictedPlane(CadacPlanes.YZ);
@@ -124,11 +130,6 @@ export class CadacThree {
 
   public addShapeToScene(shape: CadacThreeShape) {
     this.sceneShapes.push(shape);
-    // this.dragControls = new DragControls(
-    //   this.sceneShapes,
-    //   this.camera,
-    //   this.renderer.domElement
-    // );
   }
 
   public updateObjectOpacity(opacity: number, object?: CadacThreeShape) {
@@ -227,6 +228,7 @@ export class CadacThree {
     );
     this.scene.fog = new Fog(this.scene.background, nearFog, farFog);
     this.selectedObject = undefined;
+    this.sceneShapes = [];
     this.orbitControls.enableDamping = true;
     this.orbitControls.dampingFactor = 0.05;
     this.setRestrictedPlanes();
@@ -247,16 +249,18 @@ export class CadacThree {
     depth = 1,
     color: string = DEFAULTS_CADAC.COLOR,
     addToScene = true,
-    unit: CadacUnits = DEFAULTS_CADAC.UNIT
+    unit: CadacUnits = DEFAULTS_CADAC.UNIT,
+    updateCameraPosition = true
   ) {
     const cube = useCreateCube(width, height, depth, color, unit);
     this.setLineSegments(cube, color);
     if (addToScene) {
       this.scene.add(cube);
       this.sceneShapes.push(cube);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return cube;
@@ -266,16 +270,18 @@ export class CadacThree {
     radius = 1,
     color: string = DEFAULTS_CADAC.COLOR,
     addToScene = true,
-    unit: CadacUnits = DEFAULTS_CADAC.UNIT
+    unit: CadacUnits = DEFAULTS_CADAC.UNIT,
+    updateCameraPosition = true
   ) {
     const sphere = useCreateSphere(radius, color, unit);
     this.setLineSegments(sphere, color);
     if (addToScene) {
       this.scene.add(sphere);
       this.sceneShapes.push(sphere);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return sphere;
@@ -287,16 +293,18 @@ export class CadacThree {
     radialSegments = 8,
     color: string = DEFAULTS_CADAC.COLOR,
     addToScene = true,
-    unit: CadacUnits = DEFAULTS_CADAC.UNIT
+    unit: CadacUnits = DEFAULTS_CADAC.UNIT,
+    updateCameraPosition = true
   ) {
     const cone = useCreateCone(radius, height, radialSegments, color, unit);
     this.setLineSegments(cone, color);
     if (addToScene) {
       this.scene.add(cone);
       this.sceneShapes.push(cone);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return cone;
@@ -309,7 +317,8 @@ export class CadacThree {
     radialSegments = 8,
     color: string = DEFAULTS_CADAC.COLOR,
     addToScene = true,
-    unit: CadacUnits = DEFAULTS_CADAC.UNIT
+    unit: CadacUnits = DEFAULTS_CADAC.UNIT,
+    updateCameraPosition = true
   ) {
     const cylinder = useCreateCylinder(
       radiusTop,
@@ -323,9 +332,10 @@ export class CadacThree {
     if (addToScene) {
       this.scene.add(cylinder);
       this.sceneShapes.push(cylinder);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return cylinder;
@@ -338,7 +348,8 @@ export class CadacThree {
     radialSegments = 8,
     color: string = DEFAULTS_CADAC.COLOR,
     addToScene = true,
-    unit: CadacUnits = DEFAULTS_CADAC.UNIT
+    unit: CadacUnits = DEFAULTS_CADAC.UNIT,
+    updateCameraPosition = true
   ) {
     const capsule = useCreateCapsule(
       radius,
@@ -352,9 +363,10 @@ export class CadacThree {
     if (addToScene) {
       this.scene.add(capsule);
       this.sceneShapes.push(capsule);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return capsule;
@@ -365,16 +377,18 @@ export class CadacThree {
     segments = 32,
     color: string = DEFAULTS_CADAC.COLOR,
     addToScene = true,
-    unit: CadacUnits = DEFAULTS_CADAC.UNIT
+    unit: CadacUnits = DEFAULTS_CADAC.UNIT,
+    updateCameraPosition = true
   ) {
     const circle = useCreateCircle(radius, segments, color, unit);
     this.setLineSegments(circle, color);
     if (addToScene) {
       this.scene.add(circle);
       this.sceneShapes.push(circle);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return circle;
@@ -385,16 +399,18 @@ export class CadacThree {
     height = 1,
     color: string = DEFAULTS_CADAC.COLOR,
     addToScene = true,
-    unit: CadacUnits = DEFAULTS_CADAC.UNIT
+    unit: CadacUnits = DEFAULTS_CADAC.UNIT,
+    updateCameraPosition = true
   ) {
     const plane = useCreatePlane(width, height, color, unit);
     this.setLineSegments(plane, color);
     if (addToScene) {
       this.scene.add(plane);
       this.sceneShapes.push(plane);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return plane;
@@ -403,16 +419,18 @@ export class CadacThree {
   public mergeMeshes(
     meshes: CadacMergeMesh[],
     color: string = DEFAULTS_CADAC.COLOR,
-    addToScene = true
+    addToScene = true,
+    updateCameraPosition = true
   ) {
     const mergedMesh = useMergeMeshes(meshes, color);
     this.setLineSegments(mergedMesh, color);
     if (addToScene) {
       this.scene.add(mergedMesh);
       this.sceneShapes.push(mergedMesh);
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return mergedMesh;
@@ -423,7 +441,8 @@ export class CadacThree {
     meshes2: CadacMergeMesh,
     operation: CadacCSGOperation = CadacCSGOperation.SUBTRACT,
     color: string = DEFAULTS_CADAC.COLOR,
-    addToScene = true
+    addToScene = true,
+    updateCameraPosition = true
   ) {
     const subRes = useCsgOperator(meshes1, meshes2, operation, color);
     this.setLineSegments(subRes, color);
@@ -432,9 +451,9 @@ export class CadacThree {
       this.scene.add(subRes);
       this.sceneShapes.push(subRes);
 
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return subRes;
@@ -445,7 +464,8 @@ export class CadacThree {
     meshes2: CadacMergeMesh,
     operation: CadacCSGOperation = CadacCSGOperation.SUBTRACT,
     color: string = DEFAULTS_CADAC.COLOR,
-    addToScene = true
+    addToScene = true,
+    updateCameraPosition = true
   ) {
     const intRes = useCsgOperator(meshes1, meshes2, operation, color);
     this.setLineSegments(intRes, color);
@@ -454,9 +474,9 @@ export class CadacThree {
       this.scene.add(intRes);
       this.sceneShapes.push(intRes);
 
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return intRes;
@@ -467,7 +487,8 @@ export class CadacThree {
     meshes2: CadacMergeMesh,
     operation: CadacCSGOperation = CadacCSGOperation.UNION,
     color: string = DEFAULTS_CADAC.COLOR,
-    addToScene = true
+    addToScene = true,
+    updateCameraPosition = true
   ) {
     const unionRes = useCsgOperator(meshes1, meshes2, operation, color);
     this.setLineSegments(unionRes, color);
@@ -476,9 +497,9 @@ export class CadacThree {
       this.scene.add(unionRes);
       this.sceneShapes.push(unionRes);
 
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return unionRes;
@@ -489,7 +510,8 @@ export class CadacThree {
     fontSize = 1,
     position: Vector3 = new Vector3(0, 0, 0),
     color: string = DEFAULTS_CADAC.COLOR,
-    addToScene = true
+    addToScene = true,
+    updateCameraPosition = true
   ) {
     const textMesh = useCreateText(text, fontSize, position, color);
     this.setLineSegments(textMesh, color);
@@ -498,29 +520,33 @@ export class CadacThree {
       this.scene.add(textMesh);
       this.sceneShapes.push(textMesh);
 
-      setTimeout(() => {
-        this.updateCameraPosition();
-      }, this.UPDATE_CAMERA_TIMEOUT);
+      if (updateCameraPosition) {
+        this.updateCameraPositionAfter();
+      }
     }
 
     return textMesh;
   }
 
   public toggleOrbitControls(active: boolean) {
-    this.orbitControls = new OrbitControls(
-      this.camera,
-      this.renderer.domElement
-    );
-    this.orbitControls.enabled = active;
-    this.orbitControls.enableRotate = active;
-    this.orbitControls.enablePan = false;
-    this.orbitControls.enableZoom = active;
-    this.orbitControls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
-    this.orbitControls.dampingFactor = 0.05;
+    if (active) {
+      this.orbitControls = new OrbitControls(
+        this.camera,
+        this.renderer.domElement
+      );
+      this.orbitControls.enabled = active;
+      this.orbitControls.enableRotate = active;
+      this.orbitControls.enablePan = false;
+      this.orbitControls.enableZoom = active;
+      this.orbitControls.enableDamping = active; // an animation loop is required when either damping or auto-rotation are enabled
+      this.orbitControls.dampingFactor = 0.05;
 
-    this.orbitControls.listenToKeyEvents(window);
-    this.orbitControls.target.set(0, 1, 0);
-    this.orbitControls.update();
+      this.orbitControls.listenToKeyEvents(window);
+      this.orbitControls.target.set(0, 1, 0);
+      this.orbitControls.update();
+    } else {
+      this.orbitControls.dispose();
+    }
   }
 
   public toggleTransformControls(mesh: Object3D | undefined, active: boolean) {
@@ -573,8 +599,38 @@ export class CadacThree {
     this.scene.add(ambientLight);
   }
 
-  public setAxisHelper(size = 15, fontSize = 1) {
-    this.axesHelperSize = size;
+  public updateAxisHelper(size?, fontSize?) {
+    if (this.axesHelper) {
+      this.axesHelper = null;
+      for (let i = 0; i < this.scene.children.length; i++) {
+        const child = this.scene.children[i];
+        if (child.type === 'AxesHelper') {
+          child.clear();
+          this.scene.remove(child);
+          break;
+        }
+      }
+
+      const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
+      const max = Math.max(
+        boundingBox.max.x,
+        boundingBox.max.y,
+        boundingBox.max.z
+      );
+
+      this.setAxisHelper(size || max, fontSize);
+    }
+  }
+
+  public setAxisHelper(size, fontSize = 1) {
+    const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
+    const max = Math.max(
+      boundingBox.max.x,
+      boundingBox.max.y,
+      boundingBox.max.z
+    );
+
+    this.axesHelperSize = size || max * 1.5;
     this.axesHelper = new AxesHelper(this.axesHelperSize);
     const x = new Troika.Text();
     const y = new Troika.Text();
@@ -628,22 +684,56 @@ export class CadacThree {
     this.shapesToRotate.push({ shape, xSpeed, ySpeed, zSpeed });
   }
 
-  public setGridHelper(
-    size = 20,
-    divisions = 20,
-    color1 = '#e3b107',
-    color2 = '#e3b107'
-  ) {
-    this.gridHelper = new GridHelper(size, divisions, color1, color2);
-    this.scene.add(this.gridHelper);
+  public updateGridHelper() {
+    this.setGridHelper();
   }
 
-  // public setEventClickListener({
-  //   object,
-  //   callback,
-  // }: CadacClickObjectListenerData) {
-  //   this.clickObjectsListener.push({ object, callback });
-  // }
+  public toggleGridHelper(visible?) {
+    if (this.gridHelper) {
+      this.gridHelper.visible = visible || !this.gridHelper.visible;
+    } else {
+      this.setGridHelper();
+    }
+  }
+
+  public setGridHelper(
+    size?,
+    divisions?,
+    color1 = '#e30e0e',
+    color2 = '#7a7979'
+  ) {
+    const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
+    const max = Math.max(
+      boundingBox.max.x,
+      boundingBox.max.y,
+      boundingBox.max.z
+    );
+
+    const gridHelperSize = size || max * 1.5;
+    const gridHelperDivisions = divisions || gridHelperSize;
+
+    if (this.gridHelper) {
+      for (let i = 0; i < this.scene.children.length; i++) {
+        const child = this.scene.children[i];
+        if (child.type === 'GridHelper') {
+          child.clear();
+          this.scene.remove(child);
+          break;
+        }
+      }
+
+      this.gridHelper = null;
+    }
+
+    this.gridHelper = new GridHelper(
+      gridHelperSize,
+      gridHelperDivisions,
+      color1,
+      color2
+    );
+
+    this.scene.add(this.gridHelper);
+  }
 
   public setLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
     if (shape.isGroup) {
@@ -654,6 +744,23 @@ export class CadacThree {
       this.setLineSegmentsProcessor(shape, color);
     }
   }
+
+  public removeLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
+    if (shape.isGroup) {
+      shape.children.forEach(child => {
+        this.removeLineSegmentsProcessor(child as CadacThreeShape);
+      });
+    } else {
+      this.removeLineSegmentsProcessor(shape);
+    }
+  }
+
+  // public setEventClickListener({
+  //   object,
+  //   callback,
+  // }: CadacClickObjectListenerData) {
+  //   this.clickObjectsListener.push({ object, callback });
+  // }
 
   public loadPrimModel(
     { content, filename }: { content: string; filename: string },
@@ -682,6 +789,14 @@ export class CadacThree {
     progress?: (xhr: ProgressEvent<EventTarget>) => void
   ) {
     ObjCadacLoaderFromUrl(this, { baseUrl, objName }, callback, progress);
+  }
+
+  public loadGltfModelFromUrl(
+    { baseUrl, objName },
+    callback?: (obj: Group) => void,
+    progress?: (xhr: ProgressEvent<EventTarget>) => void
+  ) {
+    GltfCadacLoader(this, { baseUrl, objName }, callback, progress);
   }
 
   public loadModel(modelUrl: string, callback: (obj: Group) => void) {
@@ -713,7 +828,6 @@ export class CadacThree {
   }
 
   public toggleRestrictedPlanes(planes: CadacPlanes[]) {
-    console.log(planes);
     planes.forEach(
       plane =>
         (this.options.restrictToPositiveQuadrant[plane] =
@@ -736,6 +850,10 @@ export class CadacThree {
     this.updateCameraPosition(plane);
   }
 
+  public updateSceneCameraPosition(delay = this.UPDATE_CAMERA_TIMEOUT) {
+    this.updateCameraPositionAfter(delay);
+  }
+
   public updateContainerSize() {
     this.renderer.setSize(
       this.elRef.nativeElement?.offsetWidth,
@@ -749,17 +867,32 @@ export class CadacThree {
   }
 
   public toggleSegmentLines(value: boolean) {
-    this.selectedObject.traverse(child => {
-      if (child instanceof LineSegments) {
-        child.visible = value;
-      }
-    });
+    this.selectedObject &&
+      this.selectedObject.traverse(child => {
+        if (child instanceof LineSegments) {
+          child.visible = value;
+        }
+      });
+  }
+
+  private updateCameraPositionAfter(delay = this.UPDATE_CAMERA_TIMEOUT) {
+    setTimeout(() => {
+      this.updateCameraPosition();
+    }, delay);
   }
 
   private setLineSegmentsProcessor(shape: CadacThreeShape, color = '#a4a4a4') {
     const edges = new EdgesGeometry(shape.geometry);
     const line = new LineSegments(edges, new LineBasicMaterial({ color }));
     shape.add(line);
+  }
+
+  private removeLineSegmentsProcessor(shape: CadacThreeShape) {
+    shape.traverse(child => {
+      if (child instanceof LineSegments) {
+        shape.remove(child);
+      }
+    });
   }
 
   private updateObjectPositionProcessor(object) {
@@ -812,8 +945,16 @@ export class CadacThree {
     }
   }
 
+  private removeElementFromSceneByProp(prop: string, value) {
+    const el = this.scene.children.find(child => child[prop] === value);
+    if (el) {
+      this.scene.remove(el);
+    }
+  }
+
   private updateCameraPosition(plane: CadacPlanes = CadacPlanes.XY) {
-    this.transformControls.removeFromParent();
+    this.removeElementFromSceneByProp('uuid', this.transformControls.uuid);
+    this.removeElementFromSceneByProp('uuid', this.gridHelper.uuid);
     const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
     const center = boundingBox.getCenter(new Vector3());
     const size = boundingBox.getSize(new Vector3());
@@ -821,32 +962,50 @@ export class CadacThree {
     const fov = this.camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs((maxDim / 4) * Math.tan(fov * 2));
 
-    cameraZ *= 1.5; // zoom out a little so that objects don't fill the screen
+    cameraZ *= 1.8; // zoom out a little so that objects don't fill the screen
+
+    const cameraFinalPosition = this.camera.position.clone();
 
     switch (plane) {
       case CadacPlanes.XY:
-        this.camera.position.z = cameraZ;
-        this.camera.position.x = center.x;
-        this.camera.position.y = center.y;
+        cameraFinalPosition.z = cameraZ;
+        cameraFinalPosition.x = center.x;
+        cameraFinalPosition.y = center.y;
         break;
       case CadacPlanes.XZ:
-        this.camera.position.z = center.y;
-        this.camera.position.x = center.x;
-        this.camera.position.y = cameraZ;
+        cameraFinalPosition.z = center.y;
+        cameraFinalPosition.x = center.x;
+        cameraFinalPosition.y = cameraZ;
         break;
       case CadacPlanes.YZ:
-        this.camera.position.z = center.x;
-        this.camera.position.x = cameraZ;
-        this.camera.position.y = center.y;
+        cameraFinalPosition.z = center.x;
+        cameraFinalPosition.x = cameraZ;
+        cameraFinalPosition.y = center.y;
         break;
     }
 
-    this.camera.lookAt(center);
-    this.camera.updateProjectionMatrix();
-    this.axesHelper = new AxesHelper(cameraZ * 2);
+    this.axesHelper = new AxesHelper(maxDim * 2);
     this.scene.add(this.transformControls);
-    this.transformControls.updateMatrix();
-    this.orbitControls.update();
+    this.scene.add(this.gridHelper);
+
+    anime({
+      targets: [this.camera.position],
+      y: cameraFinalPosition.y,
+      x: cameraFinalPosition.x,
+      z: cameraFinalPosition.z,
+      easing: 'easeInOutQuad',
+      duration: DEFAULTS_CADAC.ANIMATION_DURATION,
+      update: () => {
+        this.camera.lookAt(center);
+        this.camera.updateProjectionMatrix();
+        this.transformControls.updateMatrix();
+        this.gridHelper.updateMatrix();
+        this.orbitControls.update();
+      },
+      complete: () => {
+        console.log('Anime complete');
+      },
+    });
   }
 
   private registerEventListeners() {
@@ -871,15 +1030,16 @@ export class CadacThree {
   }
 
   private tcMouseDownListenerProcessor(object) {
-    ((object as Mesh).material as Material).transparent = true;
-    this.tempProperties[object.uuid] = (
-      (object as Mesh).material as Material
-    ).opacity;
-    ((object as Mesh).material as Material).opacity = 0.5;
+    const material = (object as Mesh)?.material as Material;
+    if (material) {
+      material.transparent = true;
+      this.tempProperties[object.uuid] = material.opacity;
+      material.opacity = 0.5;
+    }
   }
 
   private tcMouseDownListener() {
-    this.orbitControls.enabled = false;
+    this.toggleOrbitControls(false);
     if (this.selectedObject.isGroup) {
       (this.selectedObject as Group).children.forEach(child => {
         this.tcMouseDownListenerProcessor(child);
@@ -890,13 +1050,15 @@ export class CadacThree {
   }
 
   private tcMouseUpListenerProcessor(object) {
-    ((object as Mesh).material as Material).opacity =
-      this.tempProperties[object.uuid];
-    delete this.tempProperties[object.uuid];
+    const material = (object as Mesh)?.material as Material;
+    if (material) {
+      material.opacity = this.tempProperties[object.uuid];
+      delete this.tempProperties[object.uuid];
+    }
   }
 
   private tcMouseUpListener() {
-    this.orbitControls.enabled = true;
+    this.toggleOrbitControls(true);
     if (this.selectedObject.isGroup) {
       (this.selectedObject as Group).children.forEach(child => {
         this.tcMouseUpListenerProcessor(child);
@@ -907,8 +1069,11 @@ export class CadacThree {
   }
 
   private onDocumentKeydown(event: KeyboardEvent) {
-    event.preventDefault();
-    event.stopPropagation();
+    if (document.activeElement?.tagName === 'body') {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     const axesHelper = this.scene.children.find(
       child => child.type === 'AxesHelper'
     );
@@ -929,15 +1094,16 @@ export class CadacThree {
         this.transformControls.showZ = !this.transformControls.showZ;
         break;
       case 'r':
-        this.transformControlsCurrentMode = 'rotate';
+        this.transformControlsCurrentMode = CadacTransformControlsModes.ROTATE;
         this.transformControls.setMode(this.transformControlsCurrentMode);
         break;
       case 's':
-        this.transformControlsCurrentMode = 'scale';
+        this.transformControlsCurrentMode = CadacTransformControlsModes.SCALE;
         this.transformControls.setMode(this.transformControlsCurrentMode);
         break;
       case 't':
-        this.transformControlsCurrentMode = 'translate';
+        this.transformControlsCurrentMode =
+          CadacTransformControlsModes.TRANSLATE;
         this.transformControls.setMode(this.transformControlsCurrentMode);
         break;
     }
@@ -958,16 +1124,30 @@ export class CadacThree {
 
       if (intersectedObject) {
         this.selectedObject = this.scene.getObjectById(intersectedObject.id);
-        this.toggleTransformControls(this.selectedObject, true);
-        this.eventSubject$.next({
-          type: CadacEventDataTypes.OBJECT_SELECTED,
+        const eventData = {
           payload: {
             object: this.selectedObject,
           },
-        });
+          type: CadacEventDataTypes.OBJECT_SELECTED,
+        };
+        this.dispatchEvent(eventData);
+
+        this.toggleTransformControls(this.selectedObject, true);
+        this.eventSubject$.next(eventData);
 
         this.debouncedObjectChangedEmitter();
         break;
+      } else {
+        this.toggleTransformControls(this.selectedObject, false);
+        const eventData = {
+          payload: {
+            object: this.selectedObject,
+          },
+          type: CadacEventDataTypes.OBJECT_UNSELECTED,
+        };
+        this.eventSubject$.next(eventData);
+        this.dispatchEvent(eventData);
+        this.selectedObject = null;
       }
     }
   }

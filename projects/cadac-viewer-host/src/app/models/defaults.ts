@@ -4,15 +4,21 @@ export const topMenuItems = [
     icon: 'pi pi-fw pi-inbox',
     items: [
       {
-        label: 'Cube Example',
+        label: 'Primitive Properties',
         icon: 'pi pi-fw pi-box',
         url: 'cube-poc',
         target: '_parent',
       },
       {
-        label: 'Models Loading Example',
+        label: 'Local & Remote Loading',
         icon: 'pi pi-fw pi-file-import',
         url: 'models-loading',
+        target: '_parent',
+      },
+      {
+        label: 'Drag & Drop Primitives',
+        icon: 'pi pi-fw pi-file-import',
+        url: 'drag-drop-primitives',
         target: '_parent',
       },
       {

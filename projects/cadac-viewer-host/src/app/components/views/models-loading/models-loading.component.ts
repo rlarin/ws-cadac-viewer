@@ -1,20 +1,12 @@
 import { AfterViewInit, Component, OnDestroy, signal } from '@angular/core';
 import {
+  CadacFileTypes,
   CadacPlanes,
   CadacThree,
   calculateContrastColor,
 } from 'ngx-cadac-viewer';
 import { MessageService, TreeNode } from 'primeng/api';
 import { InputSwitchOnChangeEvent } from 'primeng/inputswitch';
-
-export enum CadacFileTypes {
-  PRIM = 'prim',
-  RFA = 'rfa',
-  PNG = 'png',
-  OBJ = 'obj',
-  MTL = 'mtl',
-  FBX = 'fbx',
-}
 
 @Component({
   selector: 'app-models-loading',
@@ -53,15 +45,39 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
       children: [
         {
           key: '0-0',
-          label: 'Box',
-          data: 'Box model',
+          label: 'Box.obj',
+          data: {
+            name: 'Box',
+            type: CadacFileTypes.OBJ,
+          },
           icon: 'pi pi-fw pi-box',
         },
         {
           key: '0-1',
-          label: 'Cylinder',
-          data: 'Cylinder model',
+          label: 'Cylinder.obj',
+          data: {
+            name: 'Cylinder',
+            type: CadacFileTypes.OBJ,
+          },
           icon: 'pi pi-fw pi-database',
+        },
+        // {
+        //   key: '0-2',
+        //   label: 'adamHead.gltf',
+        //   data: {
+        //     name: 'adamHead',
+        //     type: CadacFileTypes.GLTF,
+        //   },
+        //   icon: 'pi pi-fw pi-user',
+        // },
+        {
+          key: '0-3',
+          label: 'DamagedHelmet.gltf',
+          data: {
+            name: 'DamagedHelmet',
+            type: CadacFileTypes.GLTF,
+          },
+          icon: 'pi pi-fw pi-qrcode',
         },
       ],
     },
@@ -86,10 +102,12 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
     this.handler.setAmbientLight();
     this.handler.setMainDirectionalLight();
     this.setEventListeners();
+    this.handler.toggleGridHelper(false);
   }
 
   ngOnDestroy(): void {
     this.removeEventListeners();
+    this.handler.dispose();
   }
 
   windowResizeHandler() {
@@ -131,6 +149,9 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
             this.handleCallback.bind(this)
           );
           break;
+        case CadacFileTypes.GLB:
+          // sss
+          break;
         default:
           //code goes here
           break;
@@ -143,7 +164,7 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
     this.handler.selectedObject = object;
     this.handler.addShapeToScene(object);
 
-    if ((this.parameters.color = object.children[0].material)) {
+    if (this.parameters.color && object.children[0].material) {
       this.parameters.color = object.children[0].material.color.getHexString();
       this.colorInputBgColor.set(this.parameters.color);
       this.handleObjectOpacity();
@@ -174,18 +195,38 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
     });
 
     this.sceneObjsTreeNode[0].children = [objNode];
+
+    this.handler.updateSceneCameraPosition(300);
+    this.handler.updateAxisHelper();
   };
 
   onNodeSelect({ node }) {
     this.resetScene();
-    this.handler.loadObjModelFromUrl(
-      {
-        baseUrl: 'assets/models/',
-        objName: node.label,
-      },
-      this.handleCallback.bind(this),
-      this.handleProgress.bind(this)
-    );
+    switch (node.data.type) {
+      case CadacFileTypes.OBJ:
+        this.handler.loadObjModelFromUrl(
+          {
+            baseUrl: 'assets/models/',
+            objName: node.data.name,
+          },
+          this.handleCallback.bind(this),
+          this.handleProgress.bind(this)
+        );
+        break;
+      case CadacFileTypes.GLTF:
+        this.handler.loadGltfModelFromUrl(
+          {
+            baseUrl: `assets/models/${node.data.name}/`,
+            objName: node.data.name,
+          },
+          this.handleCallback.bind(this),
+          this.handleProgress.bind(this)
+        );
+        break;
+      default:
+        //code goes here
+        break;
+    }
   }
 
   handleProgress(percent) {

@@ -1,0 +1,133 @@
+<div class="grid my-2">
+  <div class="col-3 align-content-start">
+    <p-card class="my-3" header="Primitives">
+      <div class="p-2 border-1 surface-border border-round w-full">
+        <ul class="list-none flex flex-column gap-2 p-0 m-0">
+          <ng-container *ngFor="let primitive of scenePrimitives">
+            <li
+              (onDragEnd)="handleDragEndPrimitive($event, primitive)"
+              (onDragStart)="handleDragStartPrimitive($event, primitive)"
+              class="p-2 border-round block cursor-pointer"
+              pDraggable>
+              <div class="flex flex-row gap-2 align-items-center">
+                <i
+                  [class]="'pi ' + primitive.icon"
+                  style="font-size: 1.5rem"></i>
+                <h3 class="m-0">
+                  {{ primitive.name }}
+                </h3>
+                <p-colorPicker
+                  [(ngModel)]="primitive.properties.color"></p-colorPicker>
+              </div>
+              <label class="block my-2" for="prop-mask">{{
+                primitive.maskPropData.label
+              }}</label>
+              <p-inputMask
+                [(ngModel)]="primitive.maskPropData.value"
+                [mask]="primitive.maskPropData.mask"
+                [placeholder]="primitive.maskPropData.placeholder"
+                class="w-full"
+                id="prop-mask"></p-inputMask>
+
+              <label class="block my-2" for="pos-mask">{{
+                primitive.maskPosData.label
+              }}</label>
+              <p-inputMask
+                [(ngModel)]="primitive.maskPosData.value"
+                [mask]="primitive.maskPosData.mask"
+                [placeholder]="primitive.maskPosData.placeholder"
+                class="w-full"
+                id="pos-mask"></p-inputMask>
+            </li>
+          </ng-container>
+        </ul>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-6 align-content-center">
+    <div #dropzone (drop)="handleDropPrimitive($event)" id="dropzone">
+      <ngx-cadac-viewer [cadacThreeHandler]="handler" [id]="'poc'" />
+    </div>
+  </div>
+
+  <div class="col-3 flex flex-column">
+    <p-card class="my-3" header="Scene Primitives">
+      <div class="card flex justify-content-start">
+        <p-tree
+          (onNodeSelect)="handleNodeSelect($event)"
+          [(selection)]="selectedInstance"
+          [value]="primitiveInstances"
+          class="w-full"
+          selectionMode="single">
+          <ng-template let-node pTemplate="default">
+            <div class="flex flex-row align-items-center justify-content-start">
+              {{ node.label }}
+              <ng-container *ngIf="node.label !== 'Scene'">
+                <div
+                  [style]="
+                    'background: ' + node.data.parsedPrimitive.properties.color
+                  "
+                  class="w-1rem h-1rem mx-2 border-round"></div>
+              </ng-container>
+            </div>
+          </ng-template>
+        </p-tree>
+      </div>
+    </p-card>
+
+    <p-card
+      *ngIf="selectedInstance"
+      class="my-3 mt-3"
+      header="Selected Primitive">
+      <div class="card flex justify-content-start">
+        <div class="p-2 border-1 surface-border border-round w-full">
+          <ul class="list-none flex flex-column gap-2 p-0 m-0">
+            <ng-container>
+              <li
+                [ngSwitch]="selectedInstance?.key"
+                class="p-2 border-round block cursor-pointer"
+                pDraggable>
+                <div class="flex flex-row gap-2 align-items-center">
+                  <i
+                    [class]="
+                      'pi ' + selectedInstance.data['parsedPrimitive'].icon
+                    "
+                    style="font-size: 1.5rem"></i>
+                  <h3 class="m-0">
+                    {{ selectedInstance.data['parsedPrimitive'].name }}
+                  </h3>
+                  <p-colorPicker
+                    [(ngModel)]="
+                      selectedInstance.data['parsedPrimitive'].properties.color
+                    "></p-colorPicker>
+                </div>
+
+                <label class="block my-2" for="inst-pos-mask"
+                  >Position (x-y-z)</label
+                >
+                <p-inputMask
+                  (keydown.enter)="handleInstancePositionChange($event)"
+                  [(ngModel)]="
+                    selectedInstance.data['parsedPrimitive'].maskPosData.value
+                  "
+                  [mask]="
+                    selectedInstance.data[
+                      'parsedPrimitive'
+                    ].maskPosData.mask.toString()
+                  "
+                  [placeholder]="
+                    selectedInstance.data[
+                      'parsedPrimitive'
+                    ].maskPosData.placeholder.toString()
+                  "
+                  class="w-full"
+                  id="inst-pos-mask"></p-inputMask>
+              </li>
+            </ng-container>
+          </ul>
+        </div>
+      </div>
+    </p-card>
+  </div>
+</div>
