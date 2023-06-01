@@ -29,7 +29,7 @@ export const CsgHandler = ({ handler, parameters }: HandlerType) => {
 
   handler.setLineSegments(cube, '#046e00');
   handler.setAmbientLight();
-  handler.setAxisHelper(30);
+  handler.setAxesHelper(30);
   handler.setGridHelper(60, 60, '#e30e0e', '#7a7979');
   handler.toggleOrbitControls(true);
 };

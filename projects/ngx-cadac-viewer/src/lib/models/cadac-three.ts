@@ -57,7 +57,10 @@ import * as Troika from 'troika-three-text';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { useCreateRestrictedPlane } from '../helpers/planes-helper';
 import { Subject } from 'rxjs';
-import { calculateContrastColor, debounce } from '../helpers/utility-functions';
+import {
+  calculateContrastColor,
+  debounce,
+} from '../helpers/utils/utility-functions';
 import { ObjCadacLoader, ObjCadacLoaderFromUrl } from '../loaders/obj-loader';
 import PrimCadacLoader from '../loaders/prim-loader';
 import MtlCadacLoader from '../loaders/mtl-loader';
@@ -73,18 +76,15 @@ export class CadacThree extends EventDispatcher {
   public elRef: ElementRef = new ElementRef(null);
   public eventSubject$: Subject<CadacEventData> = new Subject();
   public orbitControls: OrbitControls;
-  public transformControls: TransformControls = new TransformControls(
-    this.camera,
-    this.renderer.domElement
-  );
-  public axesHelper: AxesHelper | undefined = new AxesHelper(15);
-  public gridHelper: GridHelper = new GridHelper(100, 100);
+  public transformControls: TransformControls;
+  public axesHelper: AxesHelper | undefined;
+  public gridHelper: GridHelper | undefined;
   public options: CadacThreeSceneOptions = {
     elRef: this.elRef,
     renderer: this.renderer,
     camera: this.camera,
     scene: this.scene,
-    sceneBackground: '#363636',
+    sceneBackground: DEFAULTS_CADAC.SCENE_BACKGROUND_COLOR,
     defaultUnits: DEFAULTS_CADAC.UNIT,
     restrictToPositiveQuadrant: {
       XY: false,
@@ -92,20 +92,16 @@ export class CadacThree extends EventDispatcher {
       XZ: false,
     },
   };
+  private axesHelperSize = 15;
+  private gridHelperSize = 100;
   private sceneShapes: CadacThreeShape[] = [];
   private restrictedQuadrants: [] = [];
-  private axesHelperSize = 15;
-  private transformControlsCurrentMode: CadacTransformControlsModes =
-    CadacTransformControlsModes.TRANSLATE;
+  private transformControlsCurrentMode: CadacTransformControlsModes;
   private shapesToRotate: CadacThreeShapeRotation[] = [];
   private mainLight: DirectionalLight = new DirectionalLight(0xffffff, 1);
   private readonly UPDATE_CAMERA_TIMEOUT = 500;
-  private tempProperties: {
-    [key: string]: any;
-  } = {};
-  private debouncedObjectChangedEmitter = debounce(
-    this.handleObjectChangedEmitter.bind(this)
-  );
+  private tempProperties: { [key: string]: any } = {};
+  private readonly debouncedObjectChangedEmitter;
   private eventKeydownHandlerRef = this.onDocumentKeydown.bind(this);
   private eventMouseClickHandlerRef = this.onDocumentMouseClick.bind(this);
 
@@ -117,6 +113,16 @@ export class CadacThree extends EventDispatcher {
     this.orbitControls = new OrbitControls(
       this.camera,
       this.renderer.domElement
+    );
+    this.transformControls = new TransformControls(
+      this.camera,
+      this.renderer.domElement
+    );
+    this.axesHelper = new AxesHelper(this.axesHelperSize);
+    this.gridHelper = new GridHelper(this.gridHelperSize, this.gridHelperSize);
+    this.transformControlsCurrentMode = CadacTransformControlsModes.TRANSLATE;
+    this.debouncedObjectChangedEmitter = debounce(
+      this.handleObjectChangedEmitter.bind(this)
     );
 
     this.createRestrictedPlane(CadacPlanes.XY);
@@ -599,7 +605,7 @@ export class CadacThree extends EventDispatcher {
     this.scene.add(ambientLight);
   }
 
-  public updateAxisHelper(size?, fontSize?) {
+  public updateAxesHelper(size?, fontSize?) {
     if (this.axesHelper) {
       this.axesHelper = null;
       for (let i = 0; i < this.scene.children.length; i++) {
@@ -618,11 +624,11 @@ export class CadacThree extends EventDispatcher {
         boundingBox.max.z
       );
 
-      this.setAxisHelper(size || max, fontSize);
+      this.setAxesHelper(size || max, fontSize);
     }
   }
 
-  public setAxisHelper(size, fontSize = 1) {
+  public setAxesHelper(size, fontSize = 1) {
     const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
     const max = Math.max(
       boundingBox.max.x,
@@ -722,7 +728,7 @@ export class CadacThree extends EventDispatcher {
         }
       }
 
-      this.gridHelper = null;
+      this.gridHelper = undefined;
     }
 
     this.gridHelper = new GridHelper(
@@ -745,7 +751,7 @@ export class CadacThree extends EventDispatcher {
     }
   }
 
-  public removeLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
+  public removeLineSegments(shape: CadacThreeShape) {
     if (shape.isGroup) {
       shape.children.forEach(child => {
         this.removeLineSegmentsProcessor(child as CadacThreeShape);

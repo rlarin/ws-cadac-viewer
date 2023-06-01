@@ -5,11 +5,15 @@ import {
   OnDestroy,
   ViewChild,
 } from '@angular/core';
-import { CadacPlanes, CadacThree, DEFAULTS_CADAC } from 'ngx-cadac-viewer';
+import {
+  CadacPlanes,
+  CadacThree,
+  DEFAULTS_CADAC,
+  CadacEventDataTypes,
+} from 'ngx-cadac-viewer';
 import { Vector3 } from 'three';
 import { TreeNode } from 'primeng/api';
 import anime from 'animejs/lib/anime.es.js';
-import { CadacEventDataTypes } from '../../../../../../ngx-cadac-viewer/src/lib/models/types';
 
 export type PrimitiveType = {
   name: string;
@@ -180,7 +184,7 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
     this.handler.setAmbientLight();
     this.handler.setMainDirectionalLight();
     this.handler.toggleOrbitControls(true);
-    this.handler.setAxisHelper(20);
+    this.handler.setAxesHelper(20);
     this.handler.setCameraToPlane(CadacPlanes.XY);
     this.setEventListeners();
   }
@@ -265,7 +269,7 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
       duration: 200,
       complete: () => {
         this.handler.updateSceneCameraPosition(300);
-        this.handler.updateAxisHelper();
+        this.handler.updateAxesHelper();
         this.handler.updateGridHelper();
       },
     });
@@ -371,7 +375,7 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
     }
 
     primitive.position.set(position.x, position.y, position.z);
-    this.handler.updateAxisHelper();
+    this.handler.updateAxesHelper();
 
     this.addPrimitiveToTree(parsedPrimitive, primitive);
   }

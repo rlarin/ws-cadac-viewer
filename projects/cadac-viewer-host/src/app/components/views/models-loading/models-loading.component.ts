@@ -150,7 +150,7 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
           );
           break;
         case CadacFileTypes.GLB:
-          // sss
+          // CadacFileTypes.GLB
           break;
         default:
           //code goes here
@@ -197,7 +197,7 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
     this.sceneObjsTreeNode[0].children = [objNode];
 
     this.handler.updateSceneCameraPosition(300);
-    this.handler.updateAxisHelper();
+    this.handler.updateAxesHelper();
   };
 
   onNodeSelect({ node }) {
@@ -233,7 +233,7 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
     console.log(`${percent}% loaded`);
   }
 
-  handleSliderChange(value) {
+  handleSliderChange() {
     this.handleObjectOpacity();
   }
 

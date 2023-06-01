@@ -38,7 +38,7 @@ const adjustScene = (scope, object) => {
   scope.toggleOrbitControls(true);
   scope.camera.far = 100000;
   scope.camera.near = 0.1;
-  scope.setAxisHelper(absMax + absMax / 3, absMax / 25);
+  scope.setAxesHelper(absMax + absMax / 3, absMax / 25);
 
   const lightXY = new DirectionalLight(0x888888);
   const lightZY = new DirectionalLight(0x888888);

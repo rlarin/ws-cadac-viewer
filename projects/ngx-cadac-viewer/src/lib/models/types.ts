@@ -27,12 +27,15 @@ export enum CadacCSGOperation {
 export const DEFAULTS_CADAC = {
   UNIT: CadacUnits.mm,
   COLOR: '#f4f4f4',
+  SCENE_BACKGROUND_COLOR: '#363636',
   CAMERA_NEAR: 0.1,
   CAMERA_FAR: 1000,
   CAMERA_FOV: 50,
   CAMERA_POSITION: new THREE.Vector3(0, 10, 20),
   CAMERA_LOOK_AT: new THREE.Vector3(0, 0, 0),
-  ANIMATION_DURATION: 1000,
+  ANIMATION_DURATION: 500,
+  DEFAULT_TEXT: 'Cadac',
+  DEFAULT_FONT_SIZE: 1,
 };
 
 export enum CadacPlanes {
