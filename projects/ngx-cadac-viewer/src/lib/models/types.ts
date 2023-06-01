@@ -11,11 +11,11 @@ export type CadacThreeShapeRotation = {
 };
 
 export enum CadacUnits {
-  mm = 'mm', // default
-  cm = 'cm',
-  m = 'm',
-  inch = 'inch',
-  km = 'km',
+  MM = 'MM', // default
+  CM = 'CM',
+  M = 'M',
+  IN = 'IN',
+  KM = 'KM',
 }
 
 export enum CadacCSGOperation {
@@ -25,7 +25,7 @@ export enum CadacCSGOperation {
 }
 
 export const DEFAULTS_CADAC = {
-  UNIT: CadacUnits.mm,
+  UNIT: CadacUnits.MM,
   COLOR: '#f4f4f4',
   SCENE_BACKGROUND_COLOR: '#363636',
   CAMERA_NEAR: 0.1,
@@ -87,6 +87,7 @@ export enum CadacEventDataTypes {
   OBJECT_UNSELECTED = 'OBJECT_UNSELECTED',
   OBJECT_CHANGED = 'OBJECT_CHANGED',
   TOGGLE_RESTRICTED_PLANE = 'TOGGLE_RESTRICTED_PLANE',
+  MODEL_LOADING_PROGRESS = 'MODEL_LOADING_PROGRESS',
 }
 
 export enum CadacTransformControlsModes {

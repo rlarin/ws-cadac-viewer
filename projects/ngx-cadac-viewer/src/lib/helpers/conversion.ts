@@ -8,77 +8,77 @@ export class Conversion {
   ): number {
     if (Number.isFinite(value)) {
       switch (from) {
-        case CadacUnits.mm:
+        case CadacUnits.MM:
           switch (to) {
-            case CadacUnits.mm:
+            case CadacUnits.MM:
               return value;
-            case CadacUnits.cm:
+            case CadacUnits.CM:
               return value / 10;
-            case CadacUnits.inch:
+            case CadacUnits.IN:
               return value / 25.4;
-            case CadacUnits.m:
+            case CadacUnits.M:
               return value / 1000;
-            case CadacUnits.km:
+            case CadacUnits.KM:
               return value / 1000000;
           }
           break;
 
-        case CadacUnits.cm:
+        case CadacUnits.CM:
           switch (to) {
-            case CadacUnits.mm:
+            case CadacUnits.MM:
               return value * 10;
-            case CadacUnits.cm:
+            case CadacUnits.CM:
               return value;
-            case CadacUnits.inch:
+            case CadacUnits.IN:
               return value / 2.54;
-            case CadacUnits.m:
+            case CadacUnits.M:
               return value / 100;
-            case CadacUnits.km:
+            case CadacUnits.KM:
               return value / 100000;
           }
           break;
 
-        case CadacUnits.m:
+        case CadacUnits.M:
           switch (to) {
-            case CadacUnits.mm:
+            case CadacUnits.MM:
               return value * 1000;
-            case CadacUnits.cm:
+            case CadacUnits.CM:
               return value * 100;
-            case CadacUnits.inch:
+            case CadacUnits.IN:
               return value * 39.37;
-            case CadacUnits.m:
+            case CadacUnits.M:
               return value;
-            case CadacUnits.km:
+            case CadacUnits.KM:
               return value / 1000;
           }
           break;
 
-        case CadacUnits.inch:
+        case CadacUnits.IN:
           switch (to) {
-            case CadacUnits.mm:
+            case CadacUnits.MM:
               return value * 25.4;
-            case CadacUnits.cm:
+            case CadacUnits.CM:
               return value * 2.54;
-            case CadacUnits.inch:
+            case CadacUnits.IN:
               return value;
-            case CadacUnits.m:
+            case CadacUnits.M:
               return value / 39.37;
-            case CadacUnits.km:
+            case CadacUnits.KM:
               return value / 39370.079;
           }
           break;
 
-        case CadacUnits.km:
+        case CadacUnits.KM:
           switch (to) {
-            case CadacUnits.mm:
+            case CadacUnits.MM:
               return value * 1000000;
-            case CadacUnits.cm:
+            case CadacUnits.CM:
               return value * 100000;
-            case CadacUnits.m:
+            case CadacUnits.M:
               return value * 1000;
-            case CadacUnits.inch:
+            case CadacUnits.IN:
               return value * 39370.079;
-            case CadacUnits.km:
+            case CadacUnits.KM:
               return value;
           }
           break;
@@ -86,8 +86,7 @@ export class Conversion {
         default:
           return value;
       }
-    } else {
-      return value;
     }
+    return value;
   }
 }

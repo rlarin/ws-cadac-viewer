@@ -761,13 +761,6 @@ export class CadacThree extends EventDispatcher {
     }
   }
 
-  // public setEventClickListener({
-  //   object,
-  //   callback,
-  // }: CadacClickObjectListenerData) {
-  //   this.clickObjectsListener.push({ object, callback });
-  // }
-
   public loadPrimModel(
     { content, filename }: { content: string; filename: string },
     callback?: (obj: Group) => void
