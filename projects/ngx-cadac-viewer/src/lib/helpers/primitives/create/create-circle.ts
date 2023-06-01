@@ -1,5 +1,5 @@
-import { CadacUnits, DEFAULTS_CADAC } from '../../models/types';
-import { UnitsHelper } from '../units-helper';
+import { CadacUnits, DEFAULTS_CADAC } from '../../../models/types';
+import { UnitsHelper } from '../../units-helper';
 import { CircleGeometry, DoubleSide, Mesh, MeshBasicMaterial } from 'three';
 
 const createCircle = (

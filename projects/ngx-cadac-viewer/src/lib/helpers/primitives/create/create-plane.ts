@@ -1,5 +1,5 @@
-import { CadacUnits, DEFAULTS_CADAC } from '../../models/types';
-import { UnitsHelper } from '../units-helper';
+import { CadacUnits, DEFAULTS_CADAC } from '../../../models/types';
+import { UnitsHelper } from '../../units-helper';
 import { DoubleSide, Mesh, MeshBasicMaterial, PlaneGeometry } from 'three';
 
 const createPlane = (

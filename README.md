@@ -68,7 +68,7 @@ export class AppModule {
 - Initialize a new instance of the **CadacThree** class, which will handle the setup and rendering of your 3D scene.
 
 ```typescript
-import {CadacThree, CadacUnits} from "ngx-cadac-three-viewer";
+import { CadacThree, CadacUnits } from "ngx-cadac-three-viewer";
 
 export class AppComponent implements AfterViewInit, OnDestroy {
   public cadacThreeHandler: CadacThree = new CadacThree({
@@ -83,7 +83,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     // Renders the scene and starts the animation loop.
-    this.cadacThreeHandler.createScene();
+    this.cadacThreeHandler.initScene();
   }
 
   ngOnDestroy(): void {
@@ -152,24 +152,24 @@ this.cadacThreeHandler.animateShapeRotation(cube, 0, 0.01, 0);
 
 // Subtract the sphere from the cube
 const sub = handler.csgSubtract(
-    {mesh: cube, position: new Vector3(10, 0, 0)},
-    {mesh: sphere, position: new Vector3(10, 0, 0)},
+    { mesh: cube, position: new Vector3(10, 0, 0) },
+    { mesh: sphere, position: new Vector3(10, 0, 0) },
     CadacCSGOperation.SUBTRACT,
     '#09ff00'
   );
 
 // Union the sphere and the cube
 const int = handler.csgIntersect(
-  {mesh: cube, position: new Vector3(0, 10, 0)},
-  {mesh: sphere, position: new Vector3(0, 10, 0)},
+  { mesh: cube, position: new Vector3(0, 10, 0) },
+  { mesh: sphere, position: new Vector3(0, 10, 0) },
   CadacCSGOperation.INTERSECT,
   '#ff0000'
 );
 
 // Union the sphere and the cube
 const union = handler.csgUnion(
-  {mesh: box, position: new Vector3(0, 0, 10)},
-  {mesh: sphere, position: new Vector3(0, 0, 10)},
+  { mesh: box, position: new Vector3(0, 0, 10) },
+  { mesh: sphere, position: new Vector3(0, 0, 10) },
   CadacCSGOperation.UNION,
   '#e3b107'
 );
@@ -196,7 +196,7 @@ of the 3D scene.
 
 | Method                      | Description                                |
 |-----------------------------|--------------------------------------------|
-| **createScene**             | Creates a new Three.js scene.              |
+| **initScene**               | Creates a new Three.js scene.              |
 | **createCube**              | Creates a new cube.                        |
 | **createSphere**            | Creates a new sphere.                      |
 | **createCylinder**          | Creates a new cylinder.                    |
@@ -271,7 +271,7 @@ export type CadacThreeShape = THREE.Mesh | THREE.Line | THREE.Points
 
 ```text
 get SceneShapes(): CadacThreeShape[];
-createScene(): void;
+initScene(): void;
 dispose(): void;
 createCube(width?: number, height?: number, depth?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").BoxGeometry, import("three").MeshBasicMaterial>;
 createSphere(radius?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").SphereGeometry, import("three").MeshBasicMaterial>;

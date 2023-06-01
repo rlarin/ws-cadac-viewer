@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { DEFAULTS_CADAC } from '../../models/types';
+import { DEFAULTS_CADAC } from '../../../models/types';
 import { Text } from 'troika-three-text';
 
 const createText = (

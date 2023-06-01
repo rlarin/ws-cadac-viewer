@@ -5,17 +5,17 @@ import {
   DEFAULTS_CADAC,
 } from '../models/types';
 import { Object3D, PerspectiveCamera, Raycaster, Scene, Vector3 } from 'three';
-import createCube from './primitives/create-cube';
-import createSphere from './primitives/create-sphere';
-import createCone from './primitives/create-cone';
-import createCylinder from './primitives/create-cylinder';
-import createCapsule from './primitives/create-capsule';
-import createCircle from './primitives/create-circle';
-import createPlane from './primitives/create-plane';
+import createCube from './primitives/create/create-cube';
+import createSphere from './primitives/create/create-sphere';
+import createCone from './primitives/create/create-cone';
+import createCylinder from './primitives/create/create-cylinder';
+import createCapsule from './primitives/create/create-capsule';
+import createCircle from './primitives/create/create-circle';
+import createPlane from './primitives/create/create-plane';
+import createText from './primitives/create/create-text';
 import mergeMeshes from './utils/merge-meshes';
 import getIntersects from './utils/get-intersects';
 import csgOperator from './csg/csg-operator';
-import createText from './primitives/create-text';
 
 export const useCreateCube = (
   width = 1,

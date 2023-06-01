@@ -1,5 +1,5 @@
-import { CadacUnits, DEFAULTS_CADAC } from '../../models/types';
-import { UnitsHelper } from '../units-helper';
+import { CadacUnits, DEFAULTS_CADAC } from '../../../models/types';
+import { UnitsHelper } from '../../units-helper';
 import { Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 
 const createSphere = (

@@ -83,7 +83,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     // Renders the scene and starts the animation loop.
-    this.cadacThreeHandler.createScene();
+    this.cadacThreeHandler.initScene();
   }
 
   ngOnDestroy(): void {
@@ -200,7 +200,7 @@ of the 3D scene.
 
 | Method                      | Description                                |
 |-----------------------------|--------------------------------------------|
-| **createScene**             | Creates a new Three.js scene.              |
+| **initScene**               | Creates a new Three.js scene.              |
 | **createCube**              | Creates a new cube.                        |
 | **createSphere**            | Creates a new sphere.                      |
 | **createCylinder**          | Creates a new cylinder.                    |
@@ -311,7 +311,7 @@ export type CadacThreeShape = THREE.Mesh | THREE.Line | THREE.Points
 updateObjectOpacity(opacity: number, object?: CadacThreeShape): void;
 updateObjectColor(color: string, object?: CadacThreeShape): void;
 updateObjectGeometry(geometry: BufferGeometry, object?: CadacThreeShape): void;
-createScene(): void;
+initScene(): void;
 dispose(): void;
 createCube(width?: number, height?: number, depth?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").BoxGeometry, import("three").MeshBasicMaterial>;
 createSphere(radius?: number, color?: string, addToScene?: boolean, unit?: CadacUnits): Mesh<import("three").SphereGeometry, import("three").MeshBasicMaterial>;

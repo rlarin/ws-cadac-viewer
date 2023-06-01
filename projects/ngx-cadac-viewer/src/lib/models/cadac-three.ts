@@ -18,21 +18,14 @@ import { UnitsHelper } from '../helpers/units-helper';
 import {
   AmbientLight,
   AxesHelper,
-  Box3,
   BufferGeometry,
-  Color,
   DirectionalLight,
-  EdgesGeometry,
   EventDispatcher,
-  Fog,
   GridHelper,
   Group,
-  LineBasicMaterial,
-  LineSegments,
   Material,
   Mesh,
   Object3D,
-  PCFSoftShadowMap,
   PerspectiveCamera,
   Raycaster,
   Scene,
@@ -53,19 +46,36 @@ import {
   useMergeMeshes,
 } from '../helpers/shapes-helper';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import * as Troika from 'troika-three-text';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 import { useCreateRestrictedPlane } from '../helpers/planes-helper';
 import { Subject } from 'rxjs';
-import {
-  calculateContrastColor,
-  debounce,
-} from '../helpers/utils/utility-functions';
+import { debounce } from '../helpers/utils/utility-functions';
 import { ObjCadacLoader, ObjCadacLoaderFromUrl } from '../loaders/obj-loader';
 import PrimCadacLoader from '../loaders/prim-loader';
 import MtlCadacLoader from '../loaders/mtl-loader';
 import GltfCadacLoader from '../loaders/gltf-loader';
 import anime from 'animejs/lib/anime.es.js';
+import updatePrimOpacity from '../helpers/primitives/update/update-prim-opacity';
+import updatePrimColor from '../helpers/primitives/update/update-prim-color';
+import updatePrimGeometry from '../helpers/primitives/update/update-prim-geometry';
+import initScene from '../helpers/init/init-scene';
+import useToggleOrbitControls from '../helpers/utils/use-toggle-orbit-controls';
+import useToggleTransformControls from '../helpers/utils/use-toggle-transform-controls';
+import useUpdateAxesHelper from '../helpers/utils/use-update-axes-helper';
+import useSetAxesHelper from '../helpers/utils/use-set-axes-helper';
+import useSetMainDirLight from '../helpers/utils/use-set-main-dir-light';
+import useToggleGridHelper from '../helpers/utils/use-toggle-grid-helper';
+import useSetGridHelper from '../helpers/utils/use-set-grid-helper';
+import useSetLineSegments from '../helpers/utils/use-set-line-segments';
+import useRemoveLineSegments from '../helpers/utils/use-remove-line-segments';
+import updatePrimPosition from '../helpers/primitives/update/update-prim-position';
+import useToggleRestrictedPlanes from '../helpers/utils/use-toggle-restricted-planes';
+import useCreateSnapshot from '../helpers/utils/use-create-snapshot';
+import useUpdateContainerSize from '../helpers/utils/use-update-container-size';
+import useToggleSegmentLines from '../helpers/utils/use-toggle-segment-lines';
+import useRemoveLineSegmentsProcessor from '../helpers/utils/use-remove-line-segments-processor';
+import updatePrimPositionProcessor from '../helpers/primitives/update/update-prim-position-processor';
+import useAnimate from '../helpers/utils/use-animate';
+import useUpdateLightPosition from '../helpers/utils/use-update-light-position';
 
 export class CadacThree extends EventDispatcher {
   public selectedObject: CadacThreeShape | undefined = undefined;
@@ -92,10 +102,10 @@ export class CadacThree extends EventDispatcher {
       XZ: false,
     },
   };
-  private axesHelperSize = 15;
-  private gridHelperSize = 100;
+  private axesHelperSize = DEFAULTS_CADAC.DEFAULT_AXES_SIZE;
   private sceneShapes: CadacThreeShape[] = [];
   private restrictedQuadrants: [] = [];
+  private cameraUpdateTimeout: any;
   private transformControlsCurrentMode: CadacTransformControlsModes;
   private shapesToRotate: CadacThreeShapeRotation[] = [];
   private mainLight: DirectionalLight = new DirectionalLight(0xffffff, 1);
@@ -118,8 +128,11 @@ export class CadacThree extends EventDispatcher {
       this.camera,
       this.renderer.domElement
     );
-    this.axesHelper = new AxesHelper(this.axesHelperSize);
-    this.gridHelper = new GridHelper(this.gridHelperSize, this.gridHelperSize);
+    this.axesHelper = new AxesHelper(DEFAULTS_CADAC.DEFAULT_AXES_SIZE);
+    this.gridHelper = new GridHelper(
+      DEFAULTS_CADAC.DEFAULT_GRID_SIZE,
+      DEFAULTS_CADAC.DEFAULT_GRID_SIZE
+    );
     this.transformControlsCurrentMode = CadacTransformControlsModes.TRANSLATE;
     this.debouncedObjectChangedEmitter = debounce(
       this.handleObjectChangedEmitter.bind(this)
@@ -139,113 +152,27 @@ export class CadacThree extends EventDispatcher {
   }
 
   public updateObjectOpacity(opacity: number, object?: CadacThreeShape) {
-    const updatedObject = object || this.selectedObject;
-    updatedObject.material.opacity = opacity;
-    updatedObject.material.needsUpdate = true;
+    return updatePrimOpacity(this, opacity, object);
   }
 
   public updateObjectColor(color: string, object?: CadacThreeShape) {
-    const updatedObject = object || this.selectedObject;
-    if (
-      !(updatedObject instanceof LineSegments) &&
-      updatedObject.material instanceof Material
-    ) {
-      updatedObject.material.color.set(color);
-      updatedObject.material.needsUpdate = true;
-    }
-    updatedObject.children.forEach(child => {
-      if (child instanceof LineSegments) {
-        const contrastColor = calculateContrastColor(color);
-        child.material.color.set(contrastColor);
-        child.material.needsUpdate = true;
-      }
-
-      this.updateObjectColor(color, child as CadacThreeShape);
-    });
+    return updatePrimColor(this, color, object);
   }
 
   public updateObjectGeometry(
     geometry: BufferGeometry,
     object?: CadacThreeShape
   ): void {
-    // const geometryType = object.geometry.constructor.name;
-    const updatedObject = object || this.selectedObject;
-    updatedObject.geometry.dispose();
-    updatedObject.geometry = geometry;
-    updatedObject.geometry.computeBoundingBox();
-    updatedObject.geometry.computeBoundingSphere();
-    updatedObject.children.forEach(child => {
-      if (child instanceof LineSegments) {
-        child.geometry.dispose();
-        child.geometry = new EdgesGeometry(updatedObject.geometry);
-      }
-    });
-    this.updateObjectPosition();
+    return updatePrimGeometry(this, geometry, object);
   }
 
   public createScene(): void {
-    if (!this.elRef.nativeElement) {
-      return;
-    }
-
-    this.scene = new Scene();
-    const { near, far } = UnitsHelper.convertCameraUnits(
-      0.1,
-      1000,
-      this.options.defaultUnits
-    );
-    this.camera = new PerspectiveCamera(
-      50,
-      this.elRef.nativeElement?.offsetWidth /
-        this.elRef.nativeElement?.offsetHeight,
-      near,
-      far
-    );
-
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(
-      this.elRef.nativeElement?.offsetWidth,
-      this.elRef.nativeElement?.offsetHeight
-    );
-
-    this.elRef.nativeElement.appendChild(this.renderer.domElement);
-    const { x, y, z } = UnitsHelper.convertCameraPosition(
-      0,
-      10,
-      20,
-      this.options.defaultUnits
-    );
-    this.camera.position.set(x, y, z);
-    const {
-      x: xLookAt,
-      y: yLookAt,
-      z: zLookAt,
-    } = UnitsHelper.convertCameraPosition(0, 0, 0, this.options.defaultUnits);
-
-    this.camera.lookAt(xLookAt, yLookAt, zLookAt);
-
-    this.scene.background = new Color().set(this.options.sceneBackground);
-    const { near: nearFog, far: farFog } = UnitsHelper.convertCameraUnits(
-      1,
-      5000,
-      this.options.defaultUnits
-    );
-    this.scene.fog = new Fog(this.scene.background, nearFog, farFog);
-    this.selectedObject = undefined;
-    this.sceneShapes = [];
-    this.orbitControls.enableDamping = true;
-    this.orbitControls.dampingFactor = 0.05;
-    this.setRestrictedPlanes();
-    this.registerEventListeners();
-    this.animate();
+    return initScene(this);
   }
 
   public dispose() {
     this.renderer.dispose();
     this.orbitControls.dispose();
-    // this.dragControls.dispose();
     this.removeEventListeners();
   }
 
@@ -535,64 +462,11 @@ export class CadacThree extends EventDispatcher {
   }
 
   public toggleOrbitControls(active: boolean) {
-    if (active) {
-      this.orbitControls = new OrbitControls(
-        this.camera,
-        this.renderer.domElement
-      );
-      this.orbitControls.enabled = active;
-      this.orbitControls.enableRotate = active;
-      this.orbitControls.enablePan = false;
-      this.orbitControls.enableZoom = active;
-      this.orbitControls.enableDamping = active; // an animation loop is required when either damping or auto-rotation are enabled
-      this.orbitControls.dampingFactor = 0.05;
-
-      this.orbitControls.listenToKeyEvents(window);
-      this.orbitControls.target.set(0, 1, 0);
-      this.orbitControls.update();
-    } else {
-      this.orbitControls.dispose();
-    }
+    return useToggleOrbitControls(this, active);
   }
 
   public toggleTransformControls(mesh: Object3D | undefined, active: boolean) {
-    if (mesh) {
-      if (active) {
-        this.transformControls = new TransformControls(
-          this.camera,
-          this.renderer.domElement
-        );
-        this.transformControls.enabled = active;
-        this.transformControls.setMode(this.transformControlsCurrentMode);
-        this.transformControls.setTranslationSnap(1);
-        this.transformControls.attach(mesh);
-        this.transformControls.addEventListener(
-          'mouseDown',
-          this.tcMouseDownListener.bind(this)
-        );
-        this.transformControls.addEventListener(
-          'mouseUp',
-          this.tcMouseUpListener.bind(this)
-        );
-        this.transformControls.addEventListener(
-          'objectChange',
-          this.tcObjectChangeListener.bind(this)
-        );
-        this.scene.add(this.transformControls);
-      } else {
-        this.transformControls.removeEventListener(
-          'mouseDown',
-          this.tcMouseDownListener.bind(this)
-        );
-        this.transformControls.removeEventListener(
-          'mouseUp',
-          this.tcMouseUpListener.bind(this)
-        );
-        this.transformControls.detach();
-        this.transformControls.remove(mesh);
-        this.scene.remove(this.transformControls);
-      }
-    }
+    return useToggleTransformControls(this, mesh, active);
   }
 
   /**
@@ -606,67 +480,11 @@ export class CadacThree extends EventDispatcher {
   }
 
   public updateAxesHelper(size?, fontSize?) {
-    if (this.axesHelper) {
-      this.axesHelper = null;
-      for (let i = 0; i < this.scene.children.length; i++) {
-        const child = this.scene.children[i];
-        if (child.type === 'AxesHelper') {
-          child.clear();
-          this.scene.remove(child);
-          break;
-        }
-      }
-
-      const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
-      const max = Math.max(
-        boundingBox.max.x,
-        boundingBox.max.y,
-        boundingBox.max.z
-      );
-
-      this.setAxesHelper(size || max, fontSize);
-    }
+    return useUpdateAxesHelper(this, size, fontSize);
   }
 
   public setAxesHelper(size, fontSize = 1) {
-    const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
-    const max = Math.max(
-      boundingBox.max.x,
-      boundingBox.max.y,
-      boundingBox.max.z
-    );
-
-    this.axesHelperSize = size || max * 1.5;
-    this.axesHelper = new AxesHelper(this.axesHelperSize);
-    const x = new Troika.Text();
-    const y = new Troika.Text();
-    const z = new Troika.Text();
-    x.text = 'X';
-    y.text = 'Y';
-    z.text = 'Z';
-    x.fontSize = y.fontSize = z.fontSize = fontSize;
-
-    x.position.x = y.position.y = z.position.z = this.axesHelperSize + fontSize;
-
-    x.position.y = x.fontSize / 2;
-    y.position.x = (y.fontSize / 2) * -0.5;
-    z.position.y = z.fontSize / 2;
-
-    y.rotateY(Math.PI / 4);
-    z.rotateY(Math.PI / 2);
-
-    z.color =
-      y.color =
-      x.color =
-        calculateContrastColor(this.options.sceneBackground);
-
-    this.axesHelper.add(x);
-    this.axesHelper.add(y);
-    this.axesHelper.add(z);
-
-    this.updateRestrictedPlanes();
-
-    this.scene.add(this.axesHelper);
+    return useSetAxesHelper(this, size, fontSize);
   }
 
   /**
@@ -675,10 +493,7 @@ export class CadacThree extends EventDispatcher {
    * @param intensity
    */
   public setMainDirectionalLight(color = '#ffffff', intensity = 0.8) {
-    this.mainLight = new DirectionalLight(color, intensity);
-    this.mainLight.castShadow = true;
-    this.scene.add(this.mainLight);
-    return this.mainLight;
+    return useSetMainDirLight(this, color, intensity);
   }
 
   public animateShapeRotation(
@@ -695,70 +510,24 @@ export class CadacThree extends EventDispatcher {
   }
 
   public toggleGridHelper(visible?) {
-    if (this.gridHelper) {
-      this.gridHelper.visible = visible || !this.gridHelper.visible;
-    } else {
-      this.setGridHelper();
-    }
+    return useToggleGridHelper(this, visible);
   }
 
   public setGridHelper(
     size?,
     divisions?,
-    color1 = '#e30e0e',
-    color2 = '#7a7979'
+    color1 = DEFAULTS_CADAC.DEFAULT_GRID_COLOR1,
+    color2 = DEFAULTS_CADAC.DEFAULT_GRID_COLOR2
   ) {
-    const boundingBox = UnitsHelper.getConvertedBoundingBox(this.scene);
-    const max = Math.max(
-      boundingBox.max.x,
-      boundingBox.max.y,
-      boundingBox.max.z
-    );
-
-    const gridHelperSize = size || max * 1.5;
-    const gridHelperDivisions = divisions || gridHelperSize;
-
-    if (this.gridHelper) {
-      for (let i = 0; i < this.scene.children.length; i++) {
-        const child = this.scene.children[i];
-        if (child.type === 'GridHelper') {
-          child.clear();
-          this.scene.remove(child);
-          break;
-        }
-      }
-
-      this.gridHelper = undefined;
-    }
-
-    this.gridHelper = new GridHelper(
-      gridHelperSize,
-      gridHelperDivisions,
-      color1,
-      color2
-    );
-
-    this.scene.add(this.gridHelper);
+    return useSetGridHelper(this, size, divisions, color1, color2);
   }
 
   public setLineSegments(shape: CadacThreeShape, color = '#a4a4a4') {
-    if (shape.isGroup) {
-      shape.children.forEach(child => {
-        this.setLineSegmentsProcessor(child as CadacThreeShape, color);
-      });
-    } else {
-      this.setLineSegmentsProcessor(shape, color);
-    }
+    return useSetLineSegments(this, shape, color);
   }
 
   public removeLineSegments(shape: CadacThreeShape) {
-    if (shape.isGroup) {
-      shape.children.forEach(child => {
-        this.removeLineSegmentsProcessor(child as CadacThreeShape);
-      });
-    } else {
-      this.removeLineSegmentsProcessor(shape);
-    }
+    return useRemoveLineSegments(this, shape);
   }
 
   public loadPrimModel(
@@ -798,51 +567,16 @@ export class CadacThree extends EventDispatcher {
     GltfCadacLoader(this, { baseUrl, objName }, callback, progress);
   }
 
-  public loadModel(modelUrl: string, callback: (obj: Group) => void) {
-    const loader = new OBJLoader();
-    loader.load(
-      modelUrl,
-      obj => {
-        callback(obj);
-      },
-      xhr => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
-      },
-      error => {
-        console.log('An error happened', error);
-      }
-    );
-  }
-
   public updateObjectPosition() {
-    if (this.selectedObject) {
-      if (this.selectedObject.isGroup) {
-        this.selectedObject.children.forEach(object =>
-          this.updateObjectPositionProcessor(object)
-        );
-      } else {
-        this.updateObjectPositionProcessor(this.selectedObject);
-      }
-    }
+    return updatePrimPosition(this);
   }
 
   public toggleRestrictedPlanes(planes: CadacPlanes[]) {
-    planes.forEach(
-      plane =>
-        (this.options.restrictToPositiveQuadrant[plane] =
-          !this.options.restrictToPositiveQuadrant[plane])
-    );
-    this.updateRestrictedPlanes();
+    return useToggleRestrictedPlanes(this, planes);
   }
 
   public createSnapshot() {
-    this.renderer.setSize(
-      this.renderer.domElement.width,
-      this.renderer.domElement.height,
-      true
-    );
-    this.renderer.render(this.scene, this.camera);
-    return this.renderer.domElement.toDataURL('image/png');
+    return useCreateSnapshot(this);
   }
 
   public setCameraToPlane(plane: CadacPlanes) {
@@ -854,94 +588,38 @@ export class CadacThree extends EventDispatcher {
   }
 
   public updateContainerSize() {
-    this.renderer.setSize(
-      this.elRef.nativeElement?.offsetWidth,
-      this.elRef.nativeElement?.offsetHeight,
-      true
-    );
-    this.camera.aspect =
-      this.elRef.nativeElement?.offsetWidth /
-      this.elRef.nativeElement?.offsetHeight;
-    this.camera.updateProjectionMatrix();
+    return useUpdateContainerSize(this);
   }
 
   public toggleSegmentLines(value: boolean) {
-    this.selectedObject &&
-      this.selectedObject.traverse(child => {
-        if (child instanceof LineSegments) {
-          child.visible = value;
-        }
-      });
+    return useToggleSegmentLines(this, value);
   }
 
   private updateCameraPositionAfter(delay = this.UPDATE_CAMERA_TIMEOUT) {
-    setTimeout(() => {
+    clearTimeout(this.cameraUpdateTimeout);
+    this.cameraUpdateTimeout = setTimeout(() => {
       this.updateCameraPosition();
     }, delay);
   }
 
   private setLineSegmentsProcessor(shape: CadacThreeShape, color = '#a4a4a4') {
-    const edges = new EdgesGeometry(shape.geometry);
-    const line = new LineSegments(edges, new LineBasicMaterial({ color }));
-    shape.add(line);
+    return useSetLineSegments(shape, color);
   }
 
   private removeLineSegmentsProcessor(shape: CadacThreeShape) {
-    shape.traverse(child => {
-      if (child instanceof LineSegments) {
-        shape.remove(child);
-      }
-    });
+    return useRemoveLineSegmentsProcessor(shape);
   }
 
   private updateObjectPositionProcessor(object) {
-    const { x, y, z } = object.position;
-    const bbox = new Box3().setFromObject(object);
-
-    const width = bbox.max.x - bbox.min.x;
-    const height = bbox.max.y - bbox.min.y;
-    const depth = bbox.max.z - bbox.min.z;
-
-    object.position.set(
-      this.options.restrictToPositiveQuadrant?.YZ
-        ? x - width / 2 > 0
-          ? x
-          : width / 2
-        : x,
-      this.options.restrictToPositiveQuadrant?.XZ
-        ? y - height / 2 > 0
-          ? y
-          : height / 2
-        : y,
-      this.options.restrictToPositiveQuadrant?.XY
-        ? z - depth / 2 > 0
-          ? z
-          : depth / 2
-        : z
-    );
-
-    this.debouncedObjectChangedEmitter();
+    return updatePrimPositionProcessor(this, object);
   }
 
   private animate() {
-    this.shapesToRotate.forEach(shape => {
-      shape.shape.rotation.x += shape.xSpeed;
-      shape.shape.rotation.y += shape.ySpeed;
-      shape.shape.rotation.z += shape.zSpeed;
-    });
-    this.updateLightPosition();
-    requestAnimationFrame(this.animate.bind(this));
-    this.renderer.render(this.scene, this.camera);
+    return useAnimate(this);
   }
 
   private updateLightPosition() {
-    if (this.mainLight) {
-      this.mainLight.position.set(
-        this.camera.position.x,
-        this.camera.position.y,
-        this.camera.position.z
-      );
-    }
+    return useUpdateLightPosition(this);
   }
 
   private removeElementFromSceneByProp(prop: string, value) {
