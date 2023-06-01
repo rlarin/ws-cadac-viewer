@@ -233,7 +233,7 @@ export class ModelsLoadingComponent implements AfterViewInit, OnDestroy {
     console.log(`${percent}% loaded`);
   }
 
-  handleSliderChange() {
+  handleSliderChange(event) {
     this.handleObjectOpacity();
   }
 
