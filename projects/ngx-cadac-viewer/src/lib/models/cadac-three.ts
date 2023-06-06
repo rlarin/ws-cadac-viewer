@@ -596,6 +596,22 @@ export class CadacThree extends EventDispatcher {
     return useToggleSegmentLines(this, value);
   }
 
+  public removeObjectFromSceneByProp(prop: string, value) {
+    return useRemoveElFromSceneByProp(this, prop, value);
+  }
+
+  public removeObjectFromScene(object) {
+    this.scene.remove(object);
+    this.sceneShapes = this.sceneShapes.filter(
+      shape => shape.uuid !== object.uuid
+    );
+  }
+
+  public addObjectToScene(object) {
+    this.scene.add(object);
+    this.sceneShapes.push(object);
+  }
+
   private updateCameraPositionAfter(delay = this.UPDATE_CAMERA_TIMEOUT) {
     clearTimeout(this.cameraUpdateTimeout);
     this.cameraUpdateTimeout = setTimeout(() => {

@@ -8,4 +8,9 @@ export * from './lib/ngx-cadac-viewer.module';
 export * from './lib/models/cadac-three';
 export * from './lib/models/types';
 export { useLightHelper } from './lib/models/scene-helpers';
-export { calculateContrastColor } from './lib/helpers/utils/utility-functions';
+export {
+  calculateContrastColor,
+  addColors,
+  subtractColors,
+  debounce,
+} from './lib/helpers/utils/utility-functions';

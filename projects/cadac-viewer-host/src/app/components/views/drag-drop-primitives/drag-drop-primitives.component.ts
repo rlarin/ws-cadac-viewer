@@ -10,6 +10,8 @@ import {
   CadacThree,
   DEFAULTS_CADAC,
   CadacEventDataTypes,
+  CadacCSGOperation,
+  addColors,
 } from 'ngx-cadac-viewer';
 import { Vector3 } from 'three';
 import { TreeNode } from 'primeng/api';
@@ -82,7 +84,7 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
         width: 10,
         height: 10,
         depth: 10,
-        color: '#0754e3',
+        color: '#0000FF',
       },
       position: new Vector3(10, 5, 5),
       fillPropsFromMask: mask => {
@@ -116,20 +118,20 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
         label: 'Properties (radiusTop-radiusBottom-height-radialSegments)',
         mask: '99-99-99-99-99',
         placeholder: 'radiusTop-radiusBottom-height-radialSegments',
-        value: '10-10-10-10-32',
+        value: '05-10-15-10-32',
       },
       maskPosData: {
         label: 'Position (x-y-z)',
         mask: '99-99-99',
         placeholder: 'x-y-z',
-        value: '10-10-10',
+        value: '10-10-15',
       },
       properties: {
-        radiusTop: 10,
+        radiusTop: 5,
         radiusBottom: 10,
-        height: 10,
+        height: 15,
         radialSegments: 32,
-        color: '#e3b107',
+        color: '#00FF00',
       },
       position: new Vector3(10, 5, 5),
       fillPropsFromMask: mask => {
@@ -166,13 +168,16 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
     {
       key: '0-0',
       label: 'Scene',
-      data: 'Work Folder',
+      data: {
+        isRoot: true,
+      },
       icon: 'pi pi-fw pi-home',
       children: [],
       expanded: true,
+      selectable: false,
     },
   ];
-  public selectedInstance: TreeNode;
+  public selectedInstances: TreeNode[] = [];
   @ViewChild('dropzone') dropzone: ElementRef;
   private eventWindowResizeHandlerRef = this.onWindowResize.bind(this);
   private eventPrimitiveDragOverHandlerRef =
@@ -233,9 +238,18 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
     this.createPrimitive(parsedPrimitive);
   }
 
-  handleNodeSelect({ node }) {
+  handleNodeSelect({ node, originalEvent }) {
+    if (node.data.isRoot) {
+      originalEvent.preventDefault();
+      originalEvent.stopPropagation();
+      return;
+    }
     this.primitiveInstances[0].children.forEach(child => {
-      this.handleNodeUnselect({ node: child });
+      if (
+        !this.selectedInstances.find(instance => instance.key === child.key)
+      ) {
+        this.handleNodeUnselect({ node: child });
+      }
     });
 
     const { primitive } = node.data;
@@ -254,14 +268,14 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
   }
 
   handleInstancePositionChange($event) {
-    console.log('handleInstancePositionChange', $event);
     const maskValues = $event.target.value.split('-');
     const x = parseInt(maskValues[0]);
     const y = parseInt(maskValues[1]);
     const z = parseInt(maskValues[2]);
 
+    // TODO: animate
     anime({
-      targets: [this.selectedInstance.data.primitive.position],
+      targets: [this.selectedInstances[0].data.primitive.position],
       x,
       y,
       z,
@@ -271,6 +285,83 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
         this.handler.updateSceneCameraPosition(300);
         this.handler.updateAxesHelper();
         this.handler.updateGridHelper();
+      },
+    });
+  }
+
+  handleCsgOperation($event, operation: string) {
+    // Union the sphere and the cube
+    const primitive1 = this.selectedInstances[0].data.primitive;
+    this.handler.removeObjectFromScene(primitive1);
+    let csgMesh = this.selectedInstances[0].data.primitive;
+    const color1 = `#${csgMesh.material.color.getHexString()}`;
+    let colorCsgMesh;
+
+    for (let i = 1; i < this.selectedInstances.length; i++) {
+      const primitive2 = this.selectedInstances[i].data.primitive;
+      const color2 = `#${primitive2.material.color.getHexString()}`;
+      colorCsgMesh = addColors(color1, color2);
+      switch (operation) {
+        case 'union':
+          csgMesh = this.handler.csgUnion(
+            { mesh: csgMesh, position: csgMesh.position },
+            { mesh: primitive2, position: primitive2.position },
+            CadacCSGOperation.UNION,
+            colorCsgMesh,
+            false,
+            false
+          );
+          break;
+        case 'subtract':
+          csgMesh = this.handler.csgSubtract(
+            { mesh: csgMesh, position: csgMesh.position },
+            { mesh: primitive2, position: primitive2.position },
+            CadacCSGOperation.SUBTRACT,
+            colorCsgMesh,
+            false,
+            false
+          );
+          break;
+        case 'intersect':
+          csgMesh = this.handler.csgIntersect(
+            { mesh: csgMesh, position: csgMesh.position },
+            { mesh: primitive2, position: primitive2.position },
+            CadacCSGOperation.INTERSECT,
+            colorCsgMesh,
+            false,
+            false
+          );
+          break;
+      }
+
+      this.handler.removeObjectFromScene(primitive2);
+      this.primitiveInstances[0].children =
+        this.primitiveInstances[0].children.filter(
+          child => child.data.primitive.uuid !== primitive2.uuid
+        );
+    }
+
+    this.primitiveInstances[0].children =
+      this.primitiveInstances[0].children.filter(
+        child => child.data.primitive.uuid !== primitive1.uuid
+      );
+    this.handler.addObjectToScene(csgMesh);
+    const id = csgMesh.uuid.split('-')[0];
+    this.primitiveInstances[0].children.push({
+      key: id,
+      label: csgMesh.name || id,
+      icon: 'pi pi-fw pi-th-large',
+      children: [],
+      data: {
+        primitive: csgMesh,
+        parsedPrimitive: {
+          ...this.selectedInstances[0].data.parsedPrimitive,
+          position: csgMesh.position,
+          properties: {
+            ...this.selectedInstances[0].data.parsedPrimitive.properties,
+            color: colorCsgMesh,
+          },
+        },
       },
     });
   }
@@ -286,28 +377,32 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
       this.eventPrimitiveDropHandlerRef.bind(this)
     );
 
+    console.log('setEventListeners', this.handler);
     this.handler.addEventListener(
       CadacEventDataTypes.OBJECT_SELECTED,
       event => {
         const primitive = event['payload'].object;
         if (primitive) {
+          // TODO: animate
           console.log(primitive);
-          this.selectedInstance = this.primitiveInstances[0].children.find(
-            child => child.data.primitive.uuid === primitive.uuid
-          );
+          this.selectedInstances = [
+            this.primitiveInstances[0].children.find(
+              child => child.data.primitive.uuid === primitive.uuid
+            ),
+          ];
 
-          this.selectedInstance.data.primitive = primitive;
-          this.selectedInstance.data.parsedPrimitive.position =
+          this.selectedInstances[0].data.primitive = primitive;
+          this.selectedInstances[0].data.parsedPrimitive.position =
             primitive.position;
 
-          this.selectedInstance.data.parsedPrimitive.maskPosData.value = `${primitive.position.x}-${primitive.position.y}-${primitive.position.z}`;
+          this.selectedInstances[0].data.parsedPrimitive.maskPosData.value = `${primitive.position.x}-${primitive.position.y}-${primitive.position.z}`;
         }
       }
     );
 
     this.handler.addEventListener(CadacEventDataTypes.OBJECT_UNSELECTED, () => {
       console.log('OBJECT_UNSELECTED');
-      this.selectedInstance = null;
+      this.selectedInstances = [];
     });
   }
 

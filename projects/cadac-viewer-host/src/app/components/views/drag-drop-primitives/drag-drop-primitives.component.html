@@ -56,10 +56,11 @@
       <div class="card flex justify-content-start">
         <p-tree
           (onNodeSelect)="handleNodeSelect($event)"
-          [(selection)]="selectedInstance"
+          [(selection)]="selectedInstances"
+          [metaKeySelection]="true"
           [value]="primitiveInstances"
           class="w-full"
-          selectionMode="single">
+          selectionMode="multiple">
           <ng-template let-node pTemplate="default">
             <div class="flex flex-row align-items-center justify-content-start">
               {{ node.label }}
@@ -74,10 +75,50 @@
           </ng-template>
         </p-tree>
       </div>
+
+      <ng-container *ngIf="selectedInstances.length > 1">
+        <div class="flex flex-row justify-content-start my-2">
+          <p-button
+            (onClick)="handleCsgOperation($event, 'union')"
+            class="mr-2"
+            pTooltip="Union"
+            styleClass="p-button-outlined"
+            tooltipPosition="bottom">
+            <img
+              alt="logo"
+              src="/assets/icon/union.svg"
+              style="width: 1.5rem" />
+          </p-button>
+
+          <p-button
+            (onClick)="handleCsgOperation($event, 'subtract')"
+            class="mr-2"
+            pTooltip="subtract"
+            styleClass="p-button-outlined"
+            tooltipPosition="bottom">
+            <img
+              alt="subtract"
+              src="/assets/icon/subtract.svg"
+              style="width: 1.5rem" />
+          </p-button>
+
+          <p-button
+            (onClick)="handleCsgOperation($event, 'intersect')"
+            class="mr-2"
+            pTooltip="intersect"
+            styleClass="p-button-outlined"
+            tooltipPosition="bottom">
+            <img
+              alt="subtract"
+              src="/assets/icon/intersect.svg"
+              style="width: 1.5rem" />
+          </p-button>
+        </div>
+      </ng-container>
     </p-card>
 
     <p-card
-      *ngIf="selectedInstance"
+      *ngIf="selectedInstances?.length > 0"
       class="my-3 mt-3"
       header="Selected Primitive">
       <div class="card flex justify-content-start">
@@ -85,21 +126,22 @@
           <ul class="list-none flex flex-column gap-2 p-0 m-0">
             <ng-container>
               <li
-                [ngSwitch]="selectedInstance?.key"
+                [ngSwitch]="selectedInstances[0]?.key"
                 class="p-2 border-round block cursor-pointer"
                 pDraggable>
                 <div class="flex flex-row gap-2 align-items-center">
                   <i
                     [class]="
-                      'pi ' + selectedInstance.data['parsedPrimitive'].icon
+                      'pi ' + selectedInstances[0].data['parsedPrimitive'].icon
                     "
                     style="font-size: 1.5rem"></i>
                   <h3 class="m-0">
-                    {{ selectedInstance.data['parsedPrimitive'].name }}
+                    {{ selectedInstances[0].data['parsedPrimitive'].name }}
                   </h3>
                   <p-colorPicker
                     [(ngModel)]="
-                      selectedInstance.data['parsedPrimitive'].properties.color
+                      selectedInstances[0].data['parsedPrimitive'].properties
+                        .color
                     "></p-colorPicker>
                 </div>
 
@@ -109,15 +151,16 @@
                 <p-inputMask
                   (keydown.enter)="handleInstancePositionChange($event)"
                   [(ngModel)]="
-                    selectedInstance.data['parsedPrimitive'].maskPosData.value
+                    selectedInstances[0].data['parsedPrimitive'].maskPosData
+                      .value
                   "
                   [mask]="
-                    selectedInstance.data[
+                    selectedInstances[0].data[
                       'parsedPrimitive'
                     ].maskPosData.mask.toString()
                   "
                   [placeholder]="
-                    selectedInstance.data[
+                    selectedInstances[0].data[
                       'parsedPrimitive'
                     ].maskPosData.placeholder.toString()
                   "

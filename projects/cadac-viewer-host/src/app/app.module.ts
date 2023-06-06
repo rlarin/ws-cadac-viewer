@@ -31,6 +31,7 @@ import { CardModule } from 'primeng/card';
 import { InputMaskModule } from 'primeng/inputmask';
 import { BadgeModule } from 'primeng/badge';
 import { TagModule } from 'primeng/tag';
+import { SpeedDialModule } from 'primeng/speeddial';
 
 @NgModule({
   declarations: [
@@ -67,6 +68,7 @@ import { TagModule } from 'primeng/tag';
     InputMaskModule,
     BadgeModule,
     TagModule,
+    SpeedDialModule,
   ],
   providers: [],
   bootstrap: [AppComponent],
