@@ -602,6 +602,8 @@ export class CadacThree extends EventDispatcher {
 
   public removeObjectFromScene(object) {
     this.scene.remove(object);
+    this.transformControls.detach();
+    this.scene.remove(this.transformControls);
     this.sceneShapes = this.sceneShapes.filter(
       shape => shape.uuid !== object.uuid
     );

@@ -1,6 +1,6 @@
 {
   "name": "ngx-cadac-viewer",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "scripts": {
     "format": "prettier --write \"**/src/**/*.{js,ts,json,css,scss,html}\""
   },
@@ -9,6 +9,7 @@
       "sass": "./index.scss"
     }
   },
+  "license": "MIT",
   "peerDependencies": {
     "@angular/common": "^16.0.0",
     "@angular/core": "^16.0.0",

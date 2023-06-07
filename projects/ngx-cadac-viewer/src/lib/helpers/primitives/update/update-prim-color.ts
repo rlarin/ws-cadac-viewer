@@ -6,12 +6,13 @@ const updatePrimColor = (scope, color: string, object?: CadacThreeShape) => {
   const updatedObject = object || scope.selectedObject;
   if (
     !(updatedObject instanceof LineSegments) &&
-    updatedObject.material instanceof Material
+    updatedObject?.material &&
+    updatedObject?.material instanceof Material
   ) {
     updatedObject.material.color.set(color);
     updatedObject.material.needsUpdate = true;
   }
-  updatedObject.children.forEach(child => {
+  updatedObject?.children?.forEach(child => {
     if (child instanceof LineSegments) {
       const contrastColor = calculateContrastColor(color);
       child.material.color.set(contrastColor);

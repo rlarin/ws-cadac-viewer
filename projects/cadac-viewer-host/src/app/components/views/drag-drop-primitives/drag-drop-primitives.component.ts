@@ -47,6 +47,8 @@ export type PrimitiveType = {
     width?: number;
     height?: number;
     depth?: number;
+    radius?: number;
+    radialSegments?: number;
   };
   position?: Vector3;
   fillPosFromMask?: (pos: any) => {
@@ -78,7 +80,7 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
         label: 'Position (x-y-z)',
         mask: '99-99-99',
         placeholder: 'x-y-z',
-        value: '10-10-10',
+        value: '20-10-15',
       },
       properties: {
         width: 10,
@@ -150,6 +152,49 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
           height: 10,
           radialSegments: 32,
         };
+      },
+      fillPosFromMask: pos => {
+        if (pos) {
+          const posValues = pos.split('-');
+          return {
+            x: parseInt(posValues[0]),
+            y: parseInt(posValues[1]),
+            z: parseInt(posValues[2]),
+          };
+        }
+        return { x: 0, y: 0, z: 0 };
+      },
+    },
+    {
+      name: 'Sphere',
+      type: 'sphere',
+      icon: 'pi-globe',
+      maskPropData: {
+        label: 'Properties (radius)',
+        mask: '99',
+        placeholder: 'radius-radialSegments',
+        value: '10',
+      },
+      maskPosData: {
+        label: 'Position (x-y-z)',
+        mask: '99-99-99',
+        placeholder: 'x-y-z',
+        value: '10-10-15',
+      },
+      properties: {
+        radius: 10,
+        color: '#FF0000',
+      },
+      position: new Vector3(10, 5, 5),
+      fillPropsFromMask: mask => {
+        if (mask) {
+          const maskValues = mask.split('-');
+          return {
+            radius: parseInt(maskValues[0]),
+            radialSegments: parseInt(maskValues[1]),
+          };
+        }
+        return { radius: 10, radialSegments: 32 };
       },
       fillPosFromMask: pos => {
         if (pos) {
@@ -366,6 +411,13 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  handleInstanceColorChange({ value }) {
+    this.handler.updateObjectColor(
+      value,
+      this.selectedInstances[0].data.primitive
+    );
+  }
+
   private setEventListeners() {
     window.addEventListener('resize', this.eventWindowResizeHandlerRef);
     this.dropzone.nativeElement.addEventListener(
@@ -377,14 +429,12 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
       this.eventPrimitiveDropHandlerRef.bind(this)
     );
 
-    console.log('setEventListeners', this.handler);
     this.handler.addEventListener(
       CadacEventDataTypes.OBJECT_SELECTED,
       event => {
         const primitive = event['payload'].object;
         if (primitive) {
           // TODO: animate
-          console.log(primitive);
           this.selectedInstances = [
             this.primitiveInstances[0].children.find(
               child => child.data.primitive.uuid === primitive.uuid
@@ -401,7 +451,6 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
     );
 
     this.handler.addEventListener(CadacEventDataTypes.OBJECT_UNSELECTED, () => {
-      console.log('OBJECT_UNSELECTED');
       this.selectedInstances = [];
     });
   }
@@ -430,7 +479,6 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
   }
 
   private onPrimitiveDragOver(event) {
-    // console.log('onPrimitiveDragOver', event);
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
   }
@@ -461,6 +509,16 @@ export class DragDropPrimitivesComponent implements AfterViewInit, OnDestroy {
           properties.radiusBottom,
           properties.height,
           properties.radialSegments,
+          properties.color,
+          true,
+          DEFAULTS_CADAC.UNIT,
+          this.handler.SceneShapes.length === 0
+        );
+        break;
+
+      case 'sphere':
+        primitive = this.handler.createSphere(
+          properties.radius,
           properties.color,
           true,
           DEFAULTS_CADAC.UNIT,

@@ -139,6 +139,7 @@
                     {{ selectedInstances[0].data['parsedPrimitive'].name }}
                   </h3>
                   <p-colorPicker
+                    (onChange)="handleInstanceColorChange($event)"
                     [(ngModel)]="
                       selectedInstances[0].data['parsedPrimitive'].properties
                         .color

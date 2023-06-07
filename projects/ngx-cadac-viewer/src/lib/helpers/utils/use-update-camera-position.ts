@@ -50,16 +50,20 @@ const useUpdateCameraPosition = (
     easing: 'easeInOutQuad',
     duration: DEFAULTS_CADAC.ANIMATION_DURATION,
     update: () => {
-      scope.camera.lookAt(center);
-      scope.camera.updateProjectionMatrix();
-      scope.transformControls.updateMatrix();
-      scope.gridHelper.updateMatrix();
-      scope.orbitControls.update();
+      updateScene(scope, center);
     },
     complete: () => {
-      console.log('Anime complete');
+      updateScene(scope, center);
     },
   });
+};
+
+const updateScene = (scope, center) => {
+  scope.camera.lookAt(center);
+  scope.camera.updateProjectionMatrix();
+  scope.transformControls.updateMatrix();
+  scope.gridHelper.updateMatrix();
+  scope.orbitControls.update();
 };
 
 export default useUpdateCameraPosition;

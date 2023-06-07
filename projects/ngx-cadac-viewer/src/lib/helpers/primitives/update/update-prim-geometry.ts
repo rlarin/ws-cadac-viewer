@@ -11,7 +11,7 @@ const updatePrimGeometry = (
   updatedObject.geometry = geometry;
   updatedObject.geometry.computeBoundingBox();
   updatedObject.geometry.computeBoundingSphere();
-  updatedObject.children.forEach(child => {
+  updatedObject?.children?.forEach(child => {
     if (child instanceof LineSegments) {
       child.geometry.dispose();
       child.geometry = new EdgesGeometry(updatedObject.geometry);
